@@ -108,6 +108,23 @@ python3 server.py    # (ไม่บังคับ) web view ที่ http://l
 คนอื่นใช้แอปใน terminal ของตัวเองได้ด้วย `ssh streakr@your-server -p 2222` แล้วจะเจอหน้า Log in / Create account ทันที บัญชีเดียวกับเว็บ ข้อมูลที่ log ผ่าน SSH ขึ้นบนเว็บด้วย
 
 - ลองในเครื่อง: `STREAKR_LOGIN=1 python3 main.py` (รัน `python3 main.py` ธรรมดา = บัญชี `local` เหมือนเดิม)
+
+### เข้าใช้ (สำหรับผู้ใช้)
+
+```bash
+ssh streakr@ssh.streakr.kantakan.com -p 2222
+```
+
+ครั้งแรก `ssh` จะถามว่า "Are you sure you want to continue connecting?" ให้พิมพ์ `yes` (fingerprint ของ server คือ `SHA256:ykgLudyikK72Vrhf/4wIITlLl66TSFA9GSlE9MGYC8I`)
+
+อยากพิมพ์แค่ `ssh streakr` ให้เพิ่มบรรทัดนี้ใน `~/.ssh/config` ของตัวเอง
+
+```
+Host streakr
+    HostName ssh.streakr.kantakan.com
+    Port 2222
+    User streakr
+```
 - SSH user `streakr` ไม่มีรหัสผ่าน เพราะ login จริงอยู่ในแอป และ `ForceCommand` บังคับให้รันได้แค่แอปนี้ ออกจากแอปเมื่อไหร่ connection ปิดทันที ไม่มี shell
 - ปิด port forwarding, agent forwarding, X11, tunnel และไม่มี sftp, ลองได้ 3 ครั้งต่อ connection, ตัด connection ที่ค้างเกิน 10 นาที
 - รหัสผิด 3 ครั้งใน 1 ครั้งที่เข้า แอปปิดเอง, ผิดรวม 5 ครั้งบัญชีล็อก 5 นาที (เก็บใน database จึงต่อใหม่ก็ไม่หาย)
