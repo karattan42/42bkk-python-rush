@@ -1,0 +1,6 @@
+gym.db
+*.db
+__pycache__/
+.DS_Store
+tests/.venv/
+.pytest_cache/

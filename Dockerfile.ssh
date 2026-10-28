@@ -1,0 +1,21 @@
+# Streakr terminal app over SSH: "ssh streakr@your-server -p 2222"
+FROM python:3.12-slim
+
+# The image's own host keys are deleted; entrypoint.sh makes keys in the data volume.
+# "passwd -d" removes the SSH user's password: the Streakr login inside the app is the real login.
+# Same user id (10001) as the web container, so both can write the shared database.
+RUN apt-get update && apt-get install -y --no-install-recommends openssh-server tzdata \
+    && rm -rf /var/lib/apt/lists/* /etc/ssh/ssh_host_* \
+    && useradd --uid 10001 --create-home --shell /bin/sh streakr \
+    && passwd -d streakr
+
+WORKDIR /app
+COPY *.py ./
+COPY deploy/ssh/sshd_config /etc/ssh/sshd_config
+COPY deploy/ssh/entrypoint.sh /entrypoint.sh
+RUN chmod 755 /entrypoint.sh && mkdir /data && chown streakr /data
+
+ENV TZ=Asia/Bangkok
+VOLUME /data
+EXPOSE 22
+CMD ["/entrypoint.sh"]

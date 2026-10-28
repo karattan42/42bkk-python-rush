@@ -1,0 +1,44 @@
+# SSH server for "ssh streakr@your-server -p 2222". The only thing anyone can do is use
+# the Streakr terminal app. People log in to their Streakr account inside the app, so the
+# SSH user itself has no password.
+
+Port 22
+HostKey /data/ssh/ssh_host_ed25519_key
+HostKey /data/ssh/ssh_host_rsa_key
+
+# Only the one app user, never root.
+AllowUsers streakr
+PermitRootLogin no
+PasswordAuthentication yes
+PermitEmptyPasswords yes
+KbdInteractiveAuthentication no
+PubkeyAuthentication no
+UsePAM no
+
+# Whatever command the visitor asks for, they get the app. "exec" means the app replaces
+# the shell, so quitting the app (or Ctrl-C) ends the connection: there is no shell to land in.
+ForceCommand exec env STREAKR_LOGIN=1 STREAKR_DB=/data/gym.db TZ=Asia/Bangkok LANG=C.UTF-8 PYTHONIOENCODING=utf-8 /usr/local/bin/python /app/main.py
+PermitTTY yes
+
+# No tunnels, no file copying (there is no sftp Subsystem line), no forwarding of any kind.
+DisableForwarding yes
+AllowTcpForwarding no
+AllowAgentForwarding no
+AllowStreamLocalForwarding no
+X11Forwarding no
+PermitTunnel no
+GatewayPorts no
+PermitUserEnvironment no
+PermitUserRC no
+
+# Limits: few tries per connection, one session per connection, drop idle visitors
+# after 10 minutes, and refuse floods of half-open connections.
+MaxAuthTries 3
+MaxSessions 1
+MaxStartups 10:30:60
+LoginGraceTime 30
+ClientAliveInterval 300
+ClientAliveCountMax 2
+
+PrintMotd no
+PrintLastLog no

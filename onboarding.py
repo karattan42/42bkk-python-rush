@@ -1,0 +1,79 @@
+import fitness
+import inputs
+import ui
+
+STEPS = 5
+GENDERS = {"Male": "male", "Female": "female", "Not specified": "none"}
+
+
+def step_name(profile):
+    name = inputs.ask_text("What should I call you? ")
+    profile["name"] = name
+    return f"Nice to meet you, {name}!"
+
+
+def step_gender(profile):
+    label = inputs.ask_choice("Gender (used for your daily calorie estimate):",
+                              list(GENDERS.keys()), True)
+    if label is None:
+        return None
+    profile["gender"] = GENDERS[label]
+    return "Got it."
+
+
+def step_body(profile):
+    age = inputs.ask_int("Age (10-100): ", 10, 100, True)
+    if age is None:
+        return None
+    height = inputs.ask_int("Height in cm (100-250): ", 100, 250, True)
+    if height is None:
+        return None
+    weight = inputs.ask_int("Weight in kg (30-250): ", 30, 250, True)
+    if weight is None:
+        return None
+    profile["age"] = age
+    profile["height"] = height
+    profile["weight"] = weight
+    return f"Your body burns about {round(fitness.bmr(profile))} kcal a day at rest."
+
+
+def step_activities(profile):
+    activities = inputs.ask_multi("Which activities do you do?",
+                                  list(fitness.MET.keys()), True)
+    if activities is None:
+        return None
+    profile["activities"] = activities
+    return f"{', '.join(activities)}. Great mix!"
+
+
+def step_goal(profile):
+    goal = inputs.ask_int("How many days a week do you want to train? (1-7): ", 1, 7, True)
+    if goal is None:
+        return None
+    profile["weekly_goal"] = goal
+    return f"{goal} days a week. Let's build that streak!"
+
+
+# Each step fills part of the profile and returns the mascot's reply,
+# or None when the user typed b to go back one step.
+def run_onboarding():
+    profile = {"name": "", "gender": "none", "age": 0, "height": 0,
+               "weight": 0, "weekly_goal": 1, "activities": []}
+    steps = [step_name, step_gender, step_body, step_activities, step_goal]
+    step = 0
+    reply = None
+    while step < STEPS:
+        # The screen is cleared each step, so the last reply is shown under the new box.
+        ui.clear()
+        print(ui.box("Welcome to Streakr", [f"Step {step + 1}/{STEPS}  {ui.progress(step + 1, STEPS)}"]))
+        if reply is not None:
+            ui.success(reply)
+        if step > 0:
+            print("(type b to go back)")
+        reply = steps[step](profile)
+        if reply is None:
+            step = step - 1
+        else:
+            step = step + 1
+    ui.success(reply)
+    return profile

@@ -1,0 +1,27 @@
+# Website and SSH terminal together, sharing one database volume.
+# In Dokploy: create a "Docker Compose" app from this repo, add your domain to the "web"
+# service (port 8042, HTTPS on), and set ALLOWED_HOSTS to that domain.
+# The website gets no published port on purpose: Dokploy's proxy reaches it directly.
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost:8042}
+    volumes:
+      - streakr-data:/data
+    restart: unless-stopped
+
+  ssh:
+    build:
+      context: .
+      dockerfile: Dockerfile.ssh
+    ports:
+      - "2222:22"    # people connect with: ssh streakr@your-server -p 2222
+    volumes:
+      - streakr-data:/data
+    restart: unless-stopped
+
+volumes:
+  streakr-data:

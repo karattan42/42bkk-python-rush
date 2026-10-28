@@ -1,0 +1,7 @@
+gym.db
+*.db
+__pycache__/
+.git/
+*.md
+tests/
+.pytest_cache/
