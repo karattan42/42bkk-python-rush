@@ -63,13 +63,15 @@ def run_onboarding():
     step = 0
     reply = None
     while step < STEPS:
-        # The screen is cleared each step, so the last reply is shown under the new box.
-        ui.clear()
-        print(ui.box("Welcome to Streakr", [f"Step {step + 1}/{STEPS}  {ui.progress(step + 1, STEPS)}"]))
+        # The screen is cleared each step, so the last reply is shown under the progress bar.
+        ui.header("Welcome", f"Step {step + 1} of {STEPS}")
+        print("  " + ui.progress(step + 1, STEPS, 30) + ui.paint(f"  {step + 1}/{STEPS}", ui.MUTED))
+        print()
         if reply is not None:
-            ui.success(reply)
+            ui.say("happy", reply)
+            print()
         if step > 0:
-            print("(type b to go back)")
+            print("  " + ui.paint("(type b to go back)", ui.MUTED))
         reply = steps[step](profile)
         if reply is None:
             step = step - 1

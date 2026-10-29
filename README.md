@@ -57,6 +57,7 @@ python3 server.py    # (ไม่บังคับ) web view ที่ http://l
 | ไฟล์ | หน้าที่ |
 | --- | --- |
 | `main.py` | จุดเริ่มต้น: โหลดข้อมูล, onboarding ถ้ายังไม่มี profile, วนเมนูหลัก |
+| `home.py` | หน้าหลัก: streak ตัวเลขใหญ่, ปฏิทิน 4 สัปดาห์, กราฟ 14 วัน, เมนู (มี animation ตอนเปิด) |
 | `onboarding.py` | ตั้งค่าครั้งแรก 5 ขั้นตอน (พิมพ์ `b` เพื่อย้อนกลับ) |
 | `menus.py` | เมนู log / history / search / profile |
 | `plans.py` | เมนู My plans |
@@ -65,7 +66,7 @@ python3 server.py    # (ไม่บังคับ) web view ที่ http://l
 | `stats.py` | ประมวลผลข้อมูล: sum, count, sort (insertion sort), search, streak |
 | `fitness.py` | MET, kcal, BMR และท่าตั้งต้น |
 | `db.py` | อ่าน / เขียน SQLite ↔ list of dict |
-| `ui.py` | สี, กรอบ, mascot, progress bar, animation |
+| `ui.py` | สี (24-bit เมื่อ terminal รองรับ), card, ตัวเลขใหญ่, ปุ่มเมนู, splash, confetti, เต็มจอแบบ vim |
 | `seed.py` | ข้อมูลตัวอย่างสำหรับเดโม |
 | `server.py` | web view (ส่วนเสริม) ใช้ rules และ stats ชุดเดียวกับแอปหลัก |
 | `accounts.py` | สมัคร / login / session ของ web view และ terminal (hash รหัสผ่านด้วย PBKDF2) |

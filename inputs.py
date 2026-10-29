@@ -3,6 +3,13 @@ import datetime
 import ui
 
 
+# Line prompts up with the rest of the screen (2 spaces in from the left).
+def indent(prompt):
+    if prompt.startswith(" "):
+        return prompt
+    return "  " + prompt
+
+
 # allow_back=True lets the user type b to go back; the function then returns None.
 def wants_back(text, allow_back):
     return allow_back and text.lower() == "b"
@@ -10,7 +17,7 @@ def wants_back(text, allow_back):
 
 def ask_text(prompt, allow_back=False):
     while True:
-        text = input(prompt).strip()
+        text = input(indent(prompt)).strip()
         if wants_back(text, allow_back):
             return None
         if text == "":
@@ -24,7 +31,7 @@ def ask_text(prompt, allow_back=False):
 # default: the value returned when the user just presses Enter.
 def ask_int(prompt, lo, hi, allow_back=False, default=None):
     while True:
-        text = input(prompt).strip()
+        text = input(indent(prompt)).strip()
         if wants_back(text, allow_back):
             return None
         if text == "" and default is not None:
@@ -42,7 +49,7 @@ def ask_int(prompt, lo, hi, allow_back=False, default=None):
 
 def ask_date(prompt):
     while True:
-        text = input(prompt).strip()
+        text = input(indent(prompt)).strip()
         if text == "":
             return datetime.date.today().isoformat()
         try:
@@ -58,23 +65,29 @@ def ask_date(prompt):
 
 def print_options(options):
     for i in range(len(options)):
-        print(f"  {i + 1}. {options[i]}")
+        print(ui.option(i + 1, options[i]))
+
+
+def prompt_mark():
+    return "  " + ui.paint(ui.PROMPT, ui.ORANGE, True)
 
 
 def ask_choice(prompt, options, allow_back=False):
-    print(prompt)
+    print()
+    print("  " + ui.paint(prompt, None, True))
     print_options(options)
-    number = ask_int("> ", 1, len(options), allow_back)
+    number = ask_int(prompt_mark(), 1, len(options), allow_back)
     if number is None:
         return None
     return options[number - 1]
 
 
 def ask_multi(prompt, options, allow_back=False):
-    print(prompt)
+    print()
+    print("  " + ui.paint(prompt, None, True))
     print_options(options)
     while True:
-        text = input("Numbers separated by commas (e.g. 1,3): ").strip()
+        text = input(prompt_mark() + "Numbers separated by commas (e.g. 1,3): ").strip()
         if wants_back(text, allow_back):
             return None
         chosen = []
@@ -97,7 +110,7 @@ def ask_multi(prompt, options, allow_back=False):
 
 def ask_yes_no(prompt):
     while True:
-        text = input(prompt + " (y/n): ").strip().lower()
+        text = input(indent(prompt) + " (y/n): ").strip().lower()
         if text == "y" or text == "yes":
             return True
         if text == "n" or text == "no":

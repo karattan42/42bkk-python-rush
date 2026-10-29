@@ -23,8 +23,8 @@ def ask_password(prompt):
 
 # One try. Returns the account id, None for a wrong login, or BACK.
 def log_in():
-    ui.title("Log in")
-    print("(type b to go back)")
+    ui.header("Log in")
+    print("  " + ui.paint("(type b to go back)", ui.MUTED))
     username = inputs.ask_text("Username: ", True)
     if username is None:
         return BACK
@@ -38,8 +38,8 @@ def log_in():
 
 # Returns the new account id, or BACK.
 def create_account():
-    ui.title("Create account")
-    print("(type b to go back)")
+    ui.header("Create account")
+    print("  " + ui.paint("(type b to go back)", ui.MUTED))
     while True:
         username = inputs.ask_text("Choose a username (3-20 letters, numbers, _ - .): ", True)
         if username is None:
@@ -75,10 +75,17 @@ def run_login():
     wrong = 0
     while True:
         ui.clear()
-        print(ui.box("Streakr", [f"Welcome!  {ui.mascot('happy')}",
-                                 "Track your workouts, keep your streak.", "",
-                                 "1. Log in", "2. Create account", "0. Exit"]))
-        choice = input("> ").strip()
+        print("\n")
+        for line in ui.logo_lines():
+            print("  " + line)
+        print()
+        ui.say("happy", ui.paint("Welcome! ", None, True) + ui.paint("Track your workouts, keep your streak.", ui.MUTED))
+        print()
+        print(ui.option(1, "Log in"))
+        print(ui.option(2, "Create account"))
+        print(ui.option(0, "Exit"))
+        print()
+        choice = input("  " + ui.paint(ui.PROMPT, ui.ORANGE, True)).strip()
         if choice == "1":
             user_id = log_in()
             if user_id is None:

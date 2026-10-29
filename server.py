@@ -12,7 +12,7 @@ import urllib.parse
 import accounts
 import db
 import fitness
-import main
+import home
 import rules
 import stats
 import ui
@@ -403,7 +403,7 @@ def streak_html(state):
     logs = state["logs"]
     goal = state["profile"]["weekly_goal"]
     done = stats.days_this_week(logs)
-    mood = main.pick_mood(logs)
+    mood = home.pick_mood(logs)
     streak = stats.current_streak(logs)
     unit = "days"
     if streak == 1:

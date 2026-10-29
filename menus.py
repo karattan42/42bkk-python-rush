@@ -1,5 +1,8 @@
+import datetime
+
 import db
 import fitness
+import home
 import inputs
 import onboarding
 import rules
@@ -7,19 +10,35 @@ import stats
 import ui
 
 
+def nice_date(iso):
+    day = datetime.datetime.strptime(iso, "%Y-%m-%d").date()
+    return f"{day.strftime('%a')} {day.day} {day.strftime('%b %Y')}"
+
+
+# Workouts grouped under their date. Each one: a bar in the activity's color, what was
+# trained, its ID, the minutes and kcal on the right, and the exercises underneath.
 def print_logs(logs):
-    print(ui.color(f"{'ID':>4}  {'Date':<10}  {'Activity':<18}  {'Min':>4}  {'kcal':>5}  Exercises", "bold"))
+    last_date = None
     for log in logs:
-        what = ui.color(f"{log['activity'] + ' / ' + log['focus']:<18}", ui.activity_color(log["activity"]))
-        names = ", ".join(log["exercises"])
-        print(f"{log['id']:>4}  {log['date']:<10}  {what}  {log['duration']:>4}  {log['calories']:>5}  {names}")
+        if log["date"] != last_date:
+            print()
+            print("  " + ui.paint(nice_date(log["date"]), None, True))
+            last_date = log["date"]
+        bar = ui.paint("▍", ui.activity_rgb(log["activity"]), True)
+        left = (ui.paint(log["focus"], None, True) + "  "
+                + ui.paint(log["activity"], ui.activity_rgb(log["activity"]))
+                + ui.paint(f"  #{log['id']}", ui.MUTED))
+        right = (ui.paint(f"{log['duration']:>3} min", None, True)
+                 + ui.paint(f"  {log['calories']:>4} kcal", ui.MUTED))
+        print("  " + bar + " " + ui.pad(left, 42) + right)
+        print("  " + bar + "   " + ui.paint(", ".join(log["exercises"]), ui.MUTED))
 
 
 # Rule 2 check with the message. Returns True when it is OK to continue.
 def not_duplicate(logs, date, activity, focus, skip_id=None):
     if rules.is_duplicate(logs, date, activity, focus, skip_id):
         ui.error(f"You already logged {activity} / {focus} on {date}.")
-        print("  Edit that workout from menu 4 instead.")
+        print("  " + ui.paint("Edit that workout from menu 4 instead.", ui.MUTED))
         return False
     return True
 
@@ -30,7 +49,7 @@ def rest_day_ok(logs, date, activity, focus, skip_id=None):
         ui.warn(f"You trained {activity} / {focus} the day before or after {date}.")
         ui.warn("Muscles need a rest day to recover.")
         if not inputs.ask_yes_no("Log it anyway?"):
-            print("  Cancelled.")
+            print("  " + ui.paint("Cancelled.", ui.MUTED))
             return False
     return True
 
@@ -40,15 +59,23 @@ def rest_day_ok(logs, date, activity, focus, skip_id=None):
 def pick_exercises(library, activity, focus, for_plan=False):
     # Print the exercises under their group names, numbered straight through.
     names = []
-    print(f"Exercises for {activity} / {focus}:")
+    print()
+    print("  " + ui.paint(f"Exercises for {activity} / {focus}", None, True))
+    columns = 1
+    if ui.USE_COLOR:
+        columns = max(1, (ui.width() - 4) // 26)
     for group, group_names in fitness.grouped_exercises(library, activity, focus):
         if group != "":
-            print(ui.color("  " + group, "dim"))
-        for name in group_names:
-            names.append(name)
-            print(f"  {len(names)}. {name}")
+            print("  " + ui.paint(group.upper(), ui.activity_rgb(activity), True))
+        row = ""
+        for i in range(len(group_names)):
+            names.append(group_names[i])
+            row = row + ui.pad(ui.option(len(names), group_names[i]), 26)
+            if (i + 1) % columns == 0 or i == len(group_names) - 1:
+                print(row.rstrip())
+                row = ""
     while True:
-        text = input("Exercises (numbers or names, separated by commas): ")
+        text = input(inputs.indent("Exercises (numbers or names, separated by commas): "))
         chosen = []
         for part in text.split(","):
             part = part.strip()
@@ -91,7 +118,7 @@ def menu_log(state, preset=None):
     else:
         activity = preset["activity"]
         focus = preset["focus"]
-        print(f"Plan: {preset['name']} ({activity} / {focus})")
+        print("  " + ui.paint(f"Plan: {preset['name']} ({activity} / {focus})", ui.activity_rgb(activity), True))
 
     if not not_duplicate(logs, date, activity, focus):
         return
@@ -116,35 +143,62 @@ def menu_log(state, preset=None):
         ui.strong(f"New record: {record_after} days in a row!")
 
 
+# One bar split into each activity's share of all workouts, with a legend.
+def mix_lines(logs):
+    counts = stats.count_by(logs, "activity")
+    size = 36
+    bar = ""
+    used = 0
+    names = list(counts.keys())
+    for i in range(len(names)):
+        part = counts[names[i]] * size // len(logs)
+        if i == len(names) - 1:
+            part = size - used
+        used = used + part
+        bar = bar + ui.paint("█" * part, ui.activity_rgb(names[i]))
+    legend = ""
+    for name in names:
+        percent = round(counts[name] * 100 / len(logs))
+        legend = legend + ui.paint("■ ", ui.activity_rgb(name)) + f"{name} {counts[name]} " + ui.paint(f"({percent}%)", ui.MUTED) + "   "
+    if not ui.USE_COLOR:
+        bar = ""
+    return [bar, legend.rstrip()]
+
+
 def menu_history(state):
     logs = state["logs"]
     ui.title("History & stats")
     if len(logs) == 0:
-        print("  No workouts yet. Log one from menu 1.")
+        ui.say("sleepy", "No workouts yet. Log one from menu 1.")
         return
-    print_logs(stats.sort_logs(logs, "date", True))
-    print()
     goal = state["profile"]["weekly_goal"]
     done = stats.days_this_week(logs)
-    lines = [f"Total time     : {stats.total_of(logs, 'duration')} min",
-             f"Total calories : {stats.total_of(logs, 'calories')} kcal",
-             f"Current streak : {stats.current_streak(logs)} days",
-             f"Best streak    : {stats.longest_streak(logs)} days",
-             f"This week      : {ui.progress(done, goal)} {done}/{goal} days"]
+    totals = [home.number("total time", f"{stats.total_of(logs, 'duration'):,} min"),
+              home.number("kcal", f"{stats.total_of(logs, 'calories'):,}"),
+              home.number("streak", ui.plural(stats.current_streak(logs), "day"))
+              + ui.paint(f" (best {stats.longest_streak(logs)})", ui.MUTED)]
+    summary = ["   ".join(totals),
+               ui.paint("THIS WEEK ", ui.MUTED) + ui.progress(done, goal) + f" {done} of {goal} days", ""]
+    summary = summary + mix_lines(logs)
     top = stats.most_frequent_exercise(logs)
     if top is not None:
-        lines.append(f"Most frequent  : {top[0]} ({top[1]} times)")
-    lines.append("")
-    counts = stats.count_by(logs, "activity")
-    for activity in counts:
-        bar = ui.color("■" * counts[activity], ui.activity_color(activity))
-        lines.append(f"{activity:<8} {counts[activity]:>3} {bar}")
-    print(ui.box("Summary", lines))
+        summary.append("")
+        summary.append(ui.paint("MOST USED ", ui.MUTED) + ui.paint(top[0], None, True)
+                       + ui.paint("  " + ui.plural(top[1], "time"), ui.MUTED))
+    for line in ui.card("Summary", summary, ui.ORANGE):
+        print("  " + line)
+    print()
+    for line in home.month_card(logs, 28):
+        print("  " + line)
+    print("  " + ui.paint("▍", ui.BLUE, True) + " " + ui.paint("LAST 14 DAYS ", ui.MUTED) + home.spark_line(logs, 1))
+    print()
+    print("  " + ui.paint("WORKOUTS", ui.MUTED, True) + ui.paint(f"  {len(logs)} total, newest first", ui.MUTED))
+    print_logs(stats.sort_logs(logs, "date", True))
 
 
 def menu_manage(state):
     logs = state["logs"]
-    ui.title("Search / edit / delete")
+    ui.title("Search & edit")
     how = inputs.ask_choice("Search by:", ["ID", "Date", "Activity"])
     if how == "ID":
         log_id = inputs.ask_int("Workout ID: ", 1, 1000000)
@@ -208,7 +262,7 @@ def delete_log(state, log):
         state["logs"].remove(log)
         ui.success("Deleted.")
     else:
-        print("  Kept.")
+        print("  " + ui.paint("Kept.", ui.MUTED))
 
 
 def add_exercise(state):
@@ -230,13 +284,20 @@ def add_exercise(state):
 def menu_profile(state):
     profile = state["profile"]
     while True:
-        ui.title("Profile & library")
-        print(ui.box(profile["name"], [
-            f"Gender: {profile['gender']}   Age: {profile['age']}",
-            f"Height: {profile['height']} cm   Weight: {profile['weight']} kg",
-            f"Weekly goal: {profile['weekly_goal']} days",
-            f"Activities: {', '.join(profile['activities'])}",
-            f"BMR: {round(fitness.bmr(profile))} kcal/day at rest"]))
+        ui.title("Profile")
+        activities = ""
+        for activity in profile["activities"]:
+            activities = activities + ui.paint("■ ", ui.activity_rgb(activity)) + activity + "  "
+        lines = ["",
+                 ui.paint(profile["gender"].capitalize(), None, True) + ui.paint("  ·  ", ui.DIM)
+                 + f"{profile['age']} years" + ui.paint("  ·  ", ui.DIM)
+                 + f"{profile['height']} cm" + ui.paint("  ·  ", ui.DIM) + f"{profile['weight']} kg",
+                 ui.paint("GOAL ", ui.MUTED) + f"{profile['weekly_goal']} days a week",
+                 ui.paint("DOES ", ui.MUTED) + activities.rstrip(),
+                 ui.paint("BMR  ", ui.MUTED) + ui.paint(f"{round(fitness.bmr(profile)):,}", None, True)
+                 + ui.paint(" kcal a day at rest", ui.MUTED), ""]
+        for line in ui.card(profile["name"], lines, ui.PURPLE):
+            print("  " + line)
         choice = inputs.ask_choice("Choose:", ["Edit name", "Edit gender", "Edit age", "Edit height",
                                                "Edit weight", "Edit weekly goal",
                                                "Edit activities",

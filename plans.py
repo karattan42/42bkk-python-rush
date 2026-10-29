@@ -9,9 +9,9 @@ import ui
 def print_plans(plans):
     for i in range(len(plans)):
         plan = plans[i]
-        what = ui.color(plan["activity"] + " / " + plan["focus"], ui.activity_color(plan["activity"]))
-        print(f"  {i + 1}. {ui.color(plan['name'], 'bold')} ({what})")
-        print(f"     {', '.join(plan['exercises'])}")
+        what = ui.paint(plan["activity"] + " / " + plan["focus"], ui.activity_rgb(plan["activity"]))
+        print(ui.option(i + 1, ui.paint(plan["name"], None, True) + " (" + what + ")"))
+        print("       " + ui.paint(", ".join(plan["exercises"]), ui.MUTED))
 
 
 # Returns the chosen plan, or None when there are no plans yet.
@@ -29,7 +29,7 @@ def menu_plans(state):
     while True:
         ui.title("My plans")
         if len(state["plans"]) == 0:
-            print("  No plans yet.")
+            ui.say("happy", "No plans yet. Create one, or let me pick a random one.")
         else:
             print_plans(state["plans"])
         choice = inputs.ask_choice("Choose:", ["Create plan", "Random plan", "Edit plan",
@@ -79,7 +79,9 @@ def random_plan(state):
     count = inputs.ask_int(f"How many exercises? (1-{most}): ", 1, most)
     while True:
         exercises = stats.random_workout(library, activity, focus, count)
-        print(f"Random {activity} / {focus}: {', '.join(exercises)}")
+        print()
+        for line in ui.card(f"Random {activity} / {focus}", exercises, ui.activity_rgb(activity)):
+            print("  " + line)
         choice = inputs.ask_choice("Like it?", ["Save as plan", "Start now", "Shuffle again",
                                                 "Cancel"])
         if choice == "Save as plan":
@@ -106,7 +108,9 @@ def unused_exercises(state, plan):
 
 def edit_plan(state, plan):
     while True:
-        print(f"\n{plan['name']}: {', '.join(plan['exercises'])}")
+        print()
+        for line in ui.card(plan["name"], plan["exercises"], ui.activity_rgb(plan["activity"])):
+            print("  " + line)
         choice = inputs.ask_choice("Edit:", ["Add exercise", "Remove exercise",
                                              "Swap exercise", "Rename", "Back"])
         if choice == "Back":
@@ -138,9 +142,14 @@ def edit_plan(state, plan):
 
 
 def start_plan(state, plan):
-    ui.title(plan["name"])
-    inputs.print_options(plan["exercises"])
-    input("Do these exercises, then press Enter to log the workout...")
+    ui.header("My plans", plan["name"])
+    lines = []
+    for name in plan["exercises"]:
+        lines.append(ui.paint("○ ", ui.activity_rgb(plan["activity"])) + name)
+    for line in ui.card(f"{plan['activity']} / {plan['focus']}", lines, ui.activity_rgb(plan["activity"])):
+        print("  " + line)
+    print()
+    input(inputs.indent(ui.paint("Do these exercises, then press Enter to log the workout...", ui.MUTED)))
     menus.menu_log(state, plan)
 
 
@@ -150,4 +159,4 @@ def delete_plan(state, plan):
         state["plans"].remove(plan)
         ui.success("Deleted.")
     else:
-        print("  Kept.")
+        print("  " + ui.paint("Kept.", ui.MUTED))

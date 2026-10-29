@@ -69,7 +69,7 @@ class TerminalLogin(unittest.TestCase):
         out = self.run_app(["1", "KAN", "password-123", "3", "", "0"])
         self.assertIn("Hi Kan!", out)
         self.assertIn("Squat", out)
-        self.assertIn("Total time     : 40 min", out)
+        self.assertIn("TOTAL TIME 40 min", out)
 
     def test_accounts_and_local_data_are_separate(self):
         self.run_app(["Local", "1", "30", "170", "60", "1", "3", "1", "", "1", "1", "1", "60", "",

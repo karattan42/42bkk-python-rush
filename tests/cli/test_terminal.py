@@ -126,8 +126,8 @@ class Terminal(unittest.TestCase):
         self.seed()
         # Gym / Lower Body: Quads first, so number 8 is the first Hamstrings and glutes exercise.
         out = self.app("1", "", "1", "2", "8", "40", "", "", "0")
-        self.assertIn("Quads", out)
-        self.assertIn("Hamstrings and glutes", out)
+        self.assertIn("QUADS", out)
+        self.assertIn("HAMSTRINGS AND GLUTES", out)
         self.assertIn("8. Deadlift", out)
         self.assertEqual(json.loads(self.rows("logs")[-1]["exercises"]), ["Deadlift"])
 
