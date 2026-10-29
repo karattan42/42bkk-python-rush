@@ -3,7 +3,30 @@
 แอปบันทึกการออกกำลังกายใน terminal เขียนด้วย Python standard library ล้วน รองรับ Gym, Yoga, Pilates และ Cardio
 ช่วยให้จำได้ว่าเล่นอะไรไปแล้ว, มี plan ให้เล่นตาม และเห็น streak กับความสม่ำเสมอของตัวเอง
 
-Rush00 — 42 Bangkok Discovery Piscine
+Rush00, 42 Bangkok Discovery Piscine
+
+![Streakr ใน terminal: streak ตัวเลขใหญ่, ปฏิทิน 4 สัปดาห์, กราฟ 14 วัน และเมนู](docs/screenshots/terminal-home.png)
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/terminal-log.png" alt="หน้า Log workout: เลือก activity, focus และท่าที่แบ่งเป็นกลุ่ม"></td>
+    <td width="50%"><img src="docs/screenshots/terminal-history.png" alt="หน้า History & stats: สรุปเวลาและ kcal, สัดส่วน activity, ปฏิทิน และรายการย้อนหลัง"></td>
+  </tr>
+  <tr>
+    <td align="center">บันทึกการเล่น ท่าแบ่งกลุ่มอ่านง่าย</td>
+    <td align="center">ประวัติและสถิติ</td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/terminal-ssh-login.png" alt="หน้า Log in เมื่อเข้าผ่าน SSH"></td>
+    <td width="50%"><img src="docs/screenshots/web-themes.png" alt="Web view: dashboard แบบ dark และ light"></td>
+  </tr>
+  <tr>
+    <td align="center">เข้าผ่าน SSH ได้จากทุกเครื่อง</td>
+    <td align="center">Web view มีทั้ง light และ dark</td>
+  </tr>
+</table>
+
+![Web view: ฟอร์ม log workout บนจอคอม และ dashboard บนมือถือ](docs/screenshots/web-log-phone.png)
 
 ## วิธีรัน
 
@@ -37,7 +60,7 @@ python3 server.py    # (ไม่บังคับ) web view ที่ http://l
 | 1 | Rest day: Gym หรือ Cardio HIIT กลุ่มเดิมวันติดกัน | เตือนแล้วถามยืนยัน ตอบ n = ยกเลิก (Yoga / Pilates เล่นทุกวันได้) |
 | 2 | ห้าม log วัน + activity + focus ซ้ำ | ปฏิเสธ และบอกให้ไปแก้รายการเดิม |
 | 3 | ท่าต้องอยู่ใน focus ที่เลือก | ปฏิเสธท่านั้น แล้วให้เลือกใหม่ |
-| 4 | Plan ต้องมี 1–10 ท่าและห้ามซ้ำ | ปฏิเสธ |
+| 4 | Plan ต้องมี 1-10 ท่าและห้ามซ้ำ | ปฏิเสธ |
 
 ## Input validation
 
@@ -46,9 +69,9 @@ python3 server.py    # (ไม่บังคับ) web view ที่ http://l
 | Input | เงื่อนไข |
 | --- | --- |
 | เมนู / ตัวเลือก | ต้องเป็นตัวเลขในช่วงที่มี |
-| duration | 1–300 นาที |
-| kcal | 0–3000 |
-| อายุ / ส่วนสูง / น้ำหนัก | 10–100 ปี / 100–250 cm / 30–250 kg |
+| duration | 1-300 นาที |
+| kcal | 0-3000 |
+| อายุ / ส่วนสูง / น้ำหนัก | 10-100 ปี / 100-250 cm / 30-250 kg |
 | วันที่ | `YYYY-MM-DD` และห้ามอยู่ในอนาคต (Enter ว่าง = วันนี้) |
 | ID ที่ไม่มีอยู่ | แสดงข้อความว่าไม่พบ |
 

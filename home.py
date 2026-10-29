@@ -77,17 +77,19 @@ def month_card(logs, reveal):
     for i in range(28):
         day = start + datetime.timedelta(days=i)
         iso = day.isoformat()
+        # One small square per day, so days never merge into stripes, whatever the
+        # terminal's line spacing.
         if day > today:
-            cell = ui.paint("··", ui.DIM)
+            cell = ui.paint("·", ui.DIM)
         elif i >= reveal:
-            cell = "  "
+            cell = " "
         elif iso in first_activity:
-            cell = ui.paint("██", ui.activity_rgb(first_activity[iso]))
+            cell = ui.paint("■", ui.activity_rgb(first_activity[iso]))
         elif ui.USE_COLOR:
-            cell = ui.paint("██", ui.REST)
+            cell = ui.paint("■", ui.REST)
         else:
-            cell = "░░"  # without color, rest days need a different block
-        row = row + " " + cell
+            cell = "□"  # without color, rest days need a different shape
+        row = row + " " + cell + " "
         if i % 7 == 6:
             lines.append(row)
             row = ""
