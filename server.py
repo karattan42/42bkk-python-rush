@@ -1,6 +1,8 @@
 # Optional web view: python3 server.py, then open http://localhost:8042
 # The HTML lives in this file as strings (only *.py files can be turned in).
 # The data, rules and stats are the same modules the terminal app uses.
+# Uses: accounts.py, db.py, fitness.py, home.py, rules.py, stats.py, ui.py
+# Used by: nobody imports it; run it with python3 server.py
 import datetime
 import html
 import http.cookies
@@ -25,7 +27,7 @@ HOST = os.environ.get("HOST", "127.0.0.1")
 # host are refused (blocks DNS rebinding), and form posts must come from one of these.
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", f"localhost:{PORT},127.0.0.1:{PORT}").split(",")
 MAX_BODY = 10000  # bytes; a log form is far smaller
-THEMES = ["auto", "light", "dark"]
+THEMES = ["auto", "light", "dark", "halloween"]
 
 # No page uses JavaScript, so the browser is told to run none at all: even if some text
 # slipped past html.escape, it could not execute.
@@ -53,7 +55,15 @@ DARK_COLORS = """
   color-scheme: dark;
 """
 
-# data-theme on <html> is "auto" (follow the system), "light" or "dark".
+# Pumpkin orange, witch purple and slime green on a night-sky background.
+HALLOWEEN_COLORS = """
+  --bg: #0c0912; --surface: #17121f; --text: #f4eeff; --muted: #a99bbd; --line: #2e2440;
+  --accent: #ff7518; --on-accent: #1a0b00; --rest: #241c33; --error: #ff7a7a; --warn: #ffc94d;
+  --gym: #6f9bff; --yoga: #b57bff; --pilates: #84e04a; --cardio: #ffb02e;
+  color-scheme: dark;
+"""
+
+# data-theme on <html> is "auto" (follow the system), "light", "dark" or "halloween".
 STYLE = """
 :root {
   --bg: #f3f3f0; --surface: #ffffff; --text: #18181b; --muted: #5f5f66; --line: #e2e2de;
@@ -64,6 +74,7 @@ STYLE = """
 }
 @media (prefers-color-scheme: dark) { :root[data-theme=auto] { """ + DARK_COLORS + """ } }
 :root[data-theme=dark] { """ + DARK_COLORS + """ }
+:root[data-theme=halloween] { """ + HALLOWEEN_COLORS + """ }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text);
        font: 16px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }
@@ -98,6 +109,7 @@ h3 { font-size: 18px; }
 .theme a:hover { color: var(--text); }
 :root[data-theme=auto] .t-auto, :root[data-theme=light] .t-light,
 :root[data-theme=dark] .t-dark { background: var(--text); color: var(--bg); }
+:root[data-theme=halloween] .t-halloween { background: var(--accent); color: var(--on-accent); }
 .brand { font-weight: 800; font-size: 21px; letter-spacing: -0.03em; text-decoration: none; }
 .btn { display: inline-block; background: var(--accent); color: var(--on-accent); border: 0;
        border-radius: 999px; padding: 11px 22px; font: inherit; font-weight: 650;
@@ -256,6 +268,55 @@ input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
            background: color-mix(in srgb, var(--c) 12%, var(--surface)); }
 .est strong { display: block; font-family: var(--mono); font-size: 20px; }
 
+/* Calendar page */
+.cal-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px;
+            flex-wrap: wrap; margin: 8px 0 20px; }
+.cal-nav { display: flex; gap: 8px; }
+.cal-nav a, .cal-nav span { padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px;
+                            text-decoration: none; font-size: 14px; background: var(--surface); }
+.cal-nav a:hover { border-color: var(--accent); }
+.cal-nav span { color: var(--muted); opacity: 0.5; }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.cal .day-name { padding-bottom: 4px; }
+.cal-day { display: flex; flex-direction: column; gap: 4px; min-height: 64px; padding: 7px;
+           border-radius: 12px; border: 1px solid var(--line); background: var(--bg);
+           text-decoration: none; min-width: 0; }
+a.cal-day { transition: transform 0.15s, border-color 0.15s; }
+a.cal-day:hover { transform: translateY(-2px); border-color: var(--accent); }
+a.cal-day:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cal-day.done { background: color-mix(in srgb, var(--c) 16%, var(--surface));
+                border-color: color-mix(in srgb, var(--c) 45%, var(--line)); }
+.cal-day.future { background: transparent; border-style: dashed; color: var(--muted); opacity: 0.6; }
+.cal-day.today { outline: 2px solid var(--text); outline-offset: 1px; }
+.cal-day .d { font-family: var(--mono); font-weight: 700; font-size: 14px; }
+.cal-day .acts { display: flex; flex-wrap: wrap; gap: 3px; }
+.cal-day .acts span { width: 8px; height: 8px; border-radius: 3px; background: var(--c); }
+.cal-day .acts b { display: none; }
+.cal-day .mins { margin-top: auto; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.cal-day .unit { display: none; }
+.cal-blank { min-height: 64px; }
+.tiles.cal-tiles { margin-bottom: 16px; }
+
+/* Halloween: a glowing night sky, a pumpkin-to-purple streak card and two bats.
+   The bats are only decoration (pointer-events: none), so they never block a click. */
+:root[data-theme=halloween] body {
+  background: radial-gradient(900px 420px at 88% -8%, rgb(255 117 24 / 0.16), transparent 62%),
+              radial-gradient(800px 480px at -5% 0%, rgb(168 85 247 / 0.18), transparent 58%),
+              var(--bg) fixed; }
+:root[data-theme=halloween] .brand::after { content: " 🎃"; }
+:root[data-theme=halloween] .streak-card {
+  background: linear-gradient(140deg, #3b0f6b, #7c2d12 58%, #ea580c);
+  box-shadow: 0 20px 50px rgb(234 88 12 / 0.18); }
+:root[data-theme=halloween] .panel, :root[data-theme=halloween] .tile {
+  box-shadow: 0 0 0 1px rgb(168 85 247 / 0.06), 0 14px 40px rgb(0 0 0 / 0.35); }
+:root[data-theme=halloween] .cell.today, :root[data-theme=halloween] .cal-day.today {
+  outline-color: var(--accent); }
+:root[data-theme=halloween] .btn { box-shadow: 0 6px 22px rgb(255 117 24 / 0.35); }
+:root[data-theme=halloween] body::before, :root[data-theme=halloween] body::after {
+  content: "🦇"; position: fixed; top: 90px; left: -60px; font-size: 26px;
+  pointer-events: none; z-index: 5; opacity: 0.85; }
+:root[data-theme=halloween] body::after { top: 210px; font-size: 18px; }
+
 @media (min-width: 760px) {
   .wrap { padding: 0 32px 80px; }
   .hero { grid-template-columns: 1fr 1fr; }
@@ -265,10 +326,22 @@ input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .log-layout { grid-template-columns: 1.6fr 1fr; }
   .three { grid-template-columns: repeat(3, 1fr); max-width: 640px; }
   .big { font-size: 150px; }
+  .cal { gap: 10px; }
+  .cal-day, .cal-blank { min-height: 104px; padding: 10px; }
+  .cal-day .acts { flex-direction: column; }
+  .cal-day .acts span { width: auto; height: auto; background: none; font-size: 12px;
+                        line-height: 1.3; padding-left: 7px; border-left: 3px solid var(--c);
+                        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-day .acts b { display: inline; font-weight: 600; }
+  .cal-day .unit { display: inline; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .rise { animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
           animation-delay: calc(var(--i, 0) * 70ms); }
+  :root[data-theme=halloween] body::before { animation: fly 14s linear infinite; }
+  :root[data-theme=halloween] body::after { animation: fly 19s linear 4s infinite; }
+  .cal-day { animation: pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+             animation-delay: calc(var(--n) * 12ms + 150ms); }
   .cell { animation: pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
           animation-delay: calc(var(--n) * 14ms + 200ms); }
   .bar { transform-origin: bottom; animation: grow 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -277,19 +350,28 @@ input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
 @keyframes pop { from { opacity: 0; transform: scale(0.6); } }
 @keyframes grow { from { transform: scaleY(0); } }
+@keyframes fly {
+  0% { transform: translate(0, 0) rotate(-8deg); }
+  25% { transform: translate(30vw, 40px) rotate(6deg); }
+  50% { transform: translate(60vw, -10px) rotate(-6deg); }
+  75% { transform: translate(90vw, 50px) rotate(8deg); }
+  100% { transform: translate(120vw, 0) rotate(-8deg); } }
 """
 
 
+# Used by: 19 places in server.
 def esc(text):
     return html.escape(str(text))
 
 
+# Used by: 8 places in server.
 def color_of(activity):
     if activity in ACTIVITY_COLORS:
         return ACTIVITY_COLORS[activity]
     return "var(--muted)"
 
 
+# Used by: entry_html, choose_html, log_form_html.
 def badge(activity):
     return f"<div class='badge' style='--c:{color_of(activity)}'>{esc(activity[0])}</div>"
 
@@ -297,10 +379,12 @@ def badge(activity):
 THEME_SWITCH = ("<nav class='theme' aria-label='Theme'>"
                 "<a class='t-auto' href='/theme?set=auto'>Auto</a>"
                 "<a class='t-light' href='/theme?set=light'>Light</a>"
-                "<a class='t-dark' href='/theme?set=dark'>Dark</a></nav>")
+                "<a class='t-dark' href='/theme?set=dark'>Dark</a>"
+                "<a class='t-halloween' href='/theme?set=halloween'>🎃 Halloween</a></nav>")
 
 
 # Pages are built with data-theme='auto'; Handler.send_html swaps in the visitor's choice.
+# Used by: 7 places in server.
 def page(title, right, body):
     return ("<!doctype html><html lang='en' data-theme='auto'><head><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width, initial-scale=1'>"
@@ -314,17 +398,20 @@ LOG_BUTTON = "<a class='btn' href='/log'>Log workout</a>"
 # Log out is a form (POST), so another site cannot log you out with a simple link.
 LOGOUT_FORM = ("<form class='inline-form' method='post' action='/logout'>"
                "<button class='link-btn'>Log out</button></form>")
-ACCOUNT_LINKS = "<a class='link' href='/setup'>Profile</a>" + LOGOUT_FORM
+ACCOUNT_LINKS = ("<a class='link' href='/calendar'>Calendar</a>"
+                 "<a class='link' href='/setup'>Profile</a>" + LOGOUT_FORM)
 BACK_LINK = "<a class='link' href='/'>Back to dashboard</a>"
 
 
 # parse_qs gives a list for every key; this returns the first value or "".
+# Used by: 8 places in server.
 def first(form, key):
     if key in form:
         return form[key][0].strip()
     return ""
 
 
+# Used by: save_from_form, profile_from_form, Handler.do_GET, Handler.do_POST.
 def to_int(text, lo, hi):
     try:
         number = int(text)
@@ -336,6 +423,7 @@ def to_int(text, lo, hi):
 
 
 # Same checks as inputs.ask_date: real date, not in the future.
+# Used by: save_from_form, Handler.do_GET.
 def check_date(text):
     try:
         day = datetime.datetime.strptime(text, "%Y-%m-%d").date()
@@ -347,6 +435,7 @@ def check_date(text):
 
 
 # "Gym|Upper Body" -> ("Gym", "Upper Body"), or None if it is not in the library.
+# Used by: save_from_form, Handler.do_GET, Handler.do_POST.
 def split_choice(state, value):
     parts = value.split("|")
     if len(parts) != 2:
@@ -360,12 +449,14 @@ def split_choice(state, value):
     return activity, focus
 
 
+# Used by: 7 places in server.
 def nice_date(iso):
     day = datetime.datetime.strptime(iso, "%Y-%m-%d").date()
     return f"{day.strftime('%a')} {day.day} {day.strftime('%b')}"
 
 
 # The most recent log that matches activity (and focus, unless focus is None).
+# Used by: choose_html, aside_html.
 def last_log(logs, activity, focus):
     latest = None
     for log in logs:
@@ -378,6 +469,7 @@ def last_log(logs, activity, focus):
     return latest
 
 
+# Used by: tiles_html.
 def this_week_logs(logs):
     today = datetime.date.today()
     monday = (today - datetime.timedelta(days=today.weekday())).isoformat()
@@ -388,6 +480,7 @@ def this_week_logs(logs):
     return found
 
 
+# Used by: streak_html.
 def mood_sentence(logs, mood):
     days_off = stats.days_since_last(logs)
     if mood == "sleepy":
@@ -399,6 +492,7 @@ def mood_sentence(logs, mood):
     return "Log a workout to start a streak."
 
 
+# Used by: dashboard_html.
 def streak_html(state):
     logs = state["logs"]
     goal = state["profile"]["weekly_goal"]
@@ -424,6 +518,7 @@ def streak_html(state):
 
 
 # The last 4 weeks, Monday first. Each square takes the color of what was done that day.
+# Used by: dashboard_html.
 def month_html(logs):
     by_date = {}
     for log in logs:
@@ -464,11 +559,12 @@ def month_html(logs):
     for activity in ACTIVITY_COLORS:
         legend += f"<span style='--c:{color_of(activity)}'>{activity}</span>"
     return ("<div class='panel rise' style='--i:1'><div class='panel-head'><h2>Last 4 weeks</h2>"
-            "</div>"
+            "<a class='link small' href='/calendar'>Full calendar &rarr;</a></div>"
             f"<div class='month-grid'>{cells}</div><div class='legend'>{legend}</div>"
             "<p class='hint'>Tap a day to see what you did.</p></div>")
 
 
+# Used by: calendar_html, dashboard_html.
 def tiles_html(logs):
     week = this_week_logs(logs)
     tiles = [("var(--accent)", "Best streak", f"{stats.longest_streak(logs)} days",
@@ -488,6 +584,7 @@ def tiles_html(logs):
 
 
 # Minutes per day for the last 14 days, stacked by activity.
+# Used by: dashboard_html.
 def chart_html(logs):
     today = datetime.date.today()
     start = today - datetime.timedelta(days=13)
@@ -541,6 +638,7 @@ def chart_html(logs):
             f"<div class='chart'>{bars}</div><div class='chart-days'>{labels}</div></div>")
 
 
+# Used by: dashboard_html.
 def mix_html(logs):
     counts = stats.count_by(logs, "activity")
     total = len(logs)
@@ -560,6 +658,7 @@ def mix_html(logs):
             f"<div class='mix'>{bar}</div><ul class='mix-rows'>{rows}</ul>{top_text}</div>")
 
 
+# Used by: day_html, history_html.
 def entry_html(log):
     pills = ""
     for name in log["exercises"]:
@@ -573,6 +672,7 @@ def entry_html(log):
 
 
 # One day: what was done, or a rest day, with links to the days around it.
+# Used by: Handler.do_GET.
 def day_html(state, date):
     day = datetime.datetime.strptime(date, "%Y-%m-%d").date()
     day_logs = []
@@ -611,10 +711,105 @@ def day_html(state, date):
                    f"<p class='day-more'><a class='link' href='/log?date={date}'>+ Log another workout on this day</a></p></div>")
     body = (f"<div class='form-head rise'><div class='day-nav small'>{nav}</div>"
             f"<h1>{day.strftime('%A')} {day.day} {day.strftime('%B %Y')}</h1></div>{content}")
+    month = f"<a class='link small' href='{month_link(day.year, day.month)}'>{day.strftime('%B %Y')} calendar</a>"
+    body = body.replace("<h1>", month + "<h1>", 1)
     return page(nice_date(date), ACCOUNT_LINKS + BACK_LINK, body)
 
 
+# "YYYY-MM" from the address, as (year, month). Anything else, or a month that has not
+# started yet, gives None.
+# Used by: Handler.do_GET.
+def check_month(text):
+    try:
+        first = datetime.datetime.strptime(text + "-01", "%Y-%m-%d").date()
+    except ValueError:
+        return None
+    today = datetime.date.today()
+    if first.year < 2000 or (first.year, first.month) > (today.year, today.month):
+        return None
+    return first.year, first.month
+
+
+# Used by: day_html, calendar_html.
+def month_link(year, month):
+    return f"/calendar?month={year:04d}-{month:02d}"
+
+
+# One month, Monday first. Each day links to its day page and shows what was done.
+# Used by: Handler.do_GET.
+def calendar_html(state, year, month):
+    logs = state["logs"]
+    today = datetime.date.today()
+    first = datetime.date(year, month, 1)
+    month_logs = stats.logs_in_month(logs, year, month)
+    by_date = stats.activities_by_date(month_logs)
+    minutes = {}
+    for log in month_logs:
+        minutes[log["date"]] = minutes.get(log["date"], 0) + log["duration"]
+
+    before = stats.add_months(year, month, -1)
+    after = stats.add_months(year, month, 1)
+    nav = f"<a href='{month_link(before[0], before[1])}'>&larr; {datetime.date(before[0], before[1], 1).strftime('%b')}</a>"
+    if after <= (today.year, today.month):
+        nav += f"<a href='{month_link(after[0], after[1])}'>{datetime.date(after[0], after[1], 1).strftime('%b')} &rarr;</a>"
+        nav += "<a href='/calendar'>Today</a>"
+    else:
+        nav += "<span aria-hidden='true'>Next &rarr;</span>"
+
+    cells = ""
+    for name in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]:
+        cells += f"<div class='day-name'>{name}</div>"
+    n = 0
+    for week in stats.month_weeks(year, month):
+        for day in week:
+            if day is None:
+                cells += "<div class='cal-blank'></div>"
+                continue
+            n = n + 1
+            iso = day.isoformat()
+            extra = ""
+            if day == today:
+                extra = " today"
+            if day > today:
+                cells += f"<div class='cal-day future' style='--n:{n}'><span class='d'>{day.day}</span></div>"
+                continue
+            if iso not in by_date:
+                label = f"{nice_date(iso)}: rest"
+                cells += (f"<a class='cal-day{extra}' href='/day?date={iso}' style='--n:{n}' "
+                          f"aria-label='{label}'><span class='d'>{day.day}</span></a>")
+                continue
+            done = by_date[iso]
+            acts = ""
+            for activity in done:
+                acts += f"<span style='--c:{color_of(activity)}'><b>{esc(activity)}</b></span>"
+            label = esc(f"{nice_date(iso)}: {', '.join(done)}")
+            cells += (f"<a class='cal-day done{extra}' href='/day?date={iso}' "
+                      f"style='--n:{n}; --c:{color_of(done[0])}' aria-label='{label}'>"
+                      f"<span class='d'>{day.day}</span><span class='acts'>{acts}</span>"
+                      f"<span class='mins'>{minutes[iso]}<span class='unit'> min</span></span></a>")
+
+    legend = ""
+    for activity in ACTIVITY_COLORS:
+        legend += f"<span style='--c:{color_of(activity)}'>{activity}</span>"
+    tiles = [("var(--accent)", "Workouts", len(month_logs)), ("var(--gym)", "Training days", len(by_date)),
+             ("var(--pilates)", "Minutes", f"{stats.total_of(month_logs, 'duration'):,}"),
+             ("var(--cardio)", "Kcal", f"{stats.total_of(month_logs, 'calories'):,}")]
+    tiles_html = ""
+    for i in range(len(tiles)):
+        color, name, value = tiles[i]
+        tiles_html += (f"<div class='tile rise' style='--c:{color}; --i:{i + 1}'>"
+                       f"<div class='small muted'>{name}</div><div class='num'>{value}</div></div>")
+    body = (f"<div class='cal-head rise'><div><div class='muted small'>Calendar</div>"
+            f"<h1>{first.strftime('%B %Y')}</h1></div><nav class='cal-nav' aria-label='Months'>{nav}</nav></div>"
+            f"<section class='tiles cal-tiles'>{tiles_html}</section>"
+            f"<div class='panel rise' style='--i:5'><div class='cal'>{cells}</div>"
+            f"<div class='legend'>{legend}</div>"
+            "<p class='hint'>Tap a day to see it, or to log a workout you forgot.</p></div>")
+    return page(first.strftime("%B %Y"), ACCOUNT_LINKS + LOG_BUTTON, body)
+
+
 # Workouts grouped by day, newest first. Shows the last 7 days unless show_all.
+# Used by: dashboard_html.
 def history_html(logs, show_all):
     groups = []
     for log in stats.sort_logs(logs, "date", True):
@@ -640,6 +835,7 @@ def history_html(logs, show_all):
             f"<span class='muted small'>{len(logs)} total</span></div>{body}{more}</div>")
 
 
+# Used by: Handler.do_GET.
 def dashboard_html(state, message, show_all):
     logs = state["logs"]
     body = ""
@@ -658,6 +854,7 @@ def dashboard_html(state, message, show_all):
     return page("Streakr", ACCOUNT_LINKS + LOG_BUTTON, body)
 
 
+# Used by: choose_html, log_form_html, auth_html, setup_html.
 def error_html(error, confirm_needed):
     if error == "":
         return ""
@@ -666,6 +863,7 @@ def error_html(error, confirm_needed):
     return f"<div class='notice error' role='alert'>{esc(ui.mascot('shocked'))}  {esc(error)}</div>"
 
 
+# Used by: choose_html, log_form_html.
 def crumbs(on_details):
     if on_details:
         return ("<div class='crumbs muted'><a class='link' href='/log'>Choose activity</a>"
@@ -675,6 +873,7 @@ def crumbs(on_details):
 
 
 # Step 1: one card per activity, with its focus options as chips.
+# Used by: Handler.do_GET, Handler.do_POST.
 def choose_html(state, error, date=""):
     weight = state["profile"]["weight"]
     date_field = ""
@@ -708,6 +907,7 @@ def choose_html(state, error, date=""):
 
 
 # Right-hand panel on step 2: what helps you fill in the form.
+# Used by: log_form_html.
 def aside_html(state, activity, focus):
     latest = last_log(state["logs"], activity, focus)
     if latest is None:
@@ -736,6 +936,7 @@ def aside_html(state, activity, focus):
 
 # Step 2: the rest of the form. form holds what was typed before, so an error keeps it.
 # The exercises this person did most often for this focus, most used first (up to 6).
+# Used by: exercise_picker.
 def usual_exercises(logs, activity, focus, library):
     counts = {}
     for log in logs:
@@ -756,6 +957,7 @@ def usual_exercises(logs, activity, focus, library):
     return usual
 
 
+# Used by: exercise_picker.
 def exercise_chips(names, chosen):
     chips = ""
     for name in names:
@@ -769,6 +971,7 @@ def exercise_chips(names, chosen):
 
 # A long list is split into groups that fold open (<details>, no JavaScript needed).
 # "Your usual" comes first; every exercise appears only once.
+# Used by: log_form_html.
 def exercise_picker(state, activity, focus, chosen):
     usual = usual_exercises(state["logs"], activity, focus, state["library"])
     groups = []
@@ -807,6 +1010,7 @@ def exercise_picker(state, activity, focus, chosen):
     return html_text
 
 
+# Used by: Handler.do_GET, Handler.do_POST.
 def log_form_html(state, activity, focus, form, error, confirm_needed):
     chosen = []
     if "exercise" in form:
@@ -857,6 +1061,7 @@ def log_form_html(state, activity, focus, form, error, confirm_needed):
 
 # Same rules as the terminal app. Returns (log, error, confirm_needed);
 # log is None when nothing was saved.
+# Used by: Handler.do_POST.
 def save_from_form(state, form):
     choice = split_choice(state, first(form, "choice"))
     if choice is None:
@@ -925,6 +1130,7 @@ def save_from_form(state, form):
 
 
 # Pages for people who are not logged in, and the first-time profile form.
+# Used by: Handler.do_GET, Handler.do_POST.
 def auth_html(mode, username, error):
     if mode == "signup":
         title = "Create account"
@@ -952,6 +1158,7 @@ def auth_html(mode, username, error):
     return page(title, "", body)
 
 
+# Used by: setup_html.
 def chip_group(kind, name, options, chosen):
     chips = ""
     for value, label in options:
@@ -964,6 +1171,7 @@ def chip_group(kind, name, options, chosen):
 
 
 # The same questions as onboarding.py in the terminal app. form holds what was typed.
+# Used by: Handler.do_GET, Handler.do_POST.
 def setup_html(form, error, editing):
     genders = [("male", "Male"), ("female", "Female"), ("none", "Not specified")]
     activities = []
@@ -1009,6 +1217,7 @@ def setup_html(form, error, editing):
 
 
 # Same ranges as the terminal onboarding. Returns (profile, error).
+# Used by: Handler.do_POST.
 def profile_from_form(form):
     name = first(form, "name")
     if len(name) < 1 or len(name) > 30:
@@ -1038,6 +1247,7 @@ def profile_from_form(form):
 
 
 # A saved profile shown in the form, so editing starts from what is there.
+# Used by: Handler.do_GET.
 def profile_as_form(profile):
     return {"name": [profile["name"]], "gender": [profile["gender"]],
             "age": [str(profile["age"])], "height": [str(profile["height"])],
@@ -1048,6 +1258,7 @@ def profile_as_form(profile):
 # http.server needs a class with do_GET / do_POST. This is the only class in the
 # project: each method just reads the request and calls the plain functions above.
 class Handler(http.server.BaseHTTPRequestHandler):
+    # Called by: http.server, for every GET request (opening a page).
     def do_GET(self):
         if not self.host_ok():
             self.send_error(400, "Unknown host")
@@ -1084,6 +1295,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if saved_id is not None and stats.find_by_id(state["logs"], saved_id) is not None:
                 message = f"Saved workout #{saved_id}."
             self.send_html(dashboard_html(state, message, first(query, "all") == "1"))
+        elif url.path == "/calendar":
+            today = datetime.date.today()
+            chosen = (today.year, today.month)
+            if first(query, "month") != "":
+                chosen = check_month(first(query, "month"))
+            if chosen is None:
+                self.redirect("/calendar")
+            else:
+                self.send_html(calendar_html(state, chosen[0], chosen[1]))
         elif url.path == "/day":
             date = check_date(first(query, "date"))
             if date is None:
@@ -1105,6 +1325,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         else:
             self.send_error(404)
 
+    # Called by: http.server, for every POST request (sending a form).
     def do_POST(self):
         if not self.host_ok() or not self.same_origin():
             self.send_error(403, "Form must be sent from this site")
@@ -1167,6 +1388,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.send_html(log_form_html(state, choice[0], choice[1], form, error,
                                          confirm_needed))
 
+    # Used by: Handler.do_GET, Handler.do_POST.
     def send_html(self, text):
         text = text.replace("data-theme='auto'", f"data-theme='{self.theme()}'", 1)
         data = text.encode("utf-8")
@@ -1179,6 +1401,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    # Used by: Handler.do_GET, Handler.do_POST, Handler.set_theme.
     def redirect(self, location, cookie=""):
         self.send_response(303)
         if cookie != "":
@@ -1186,17 +1409,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header("Location", location)
         self.end_headers()
 
+    # Used by: Handler.do_GET, Handler.do_POST.
     def host_ok(self):
         return self.headers.get("Host", "") in ALLOWED_HOSTS
 
     # Browsers send Origin with every form post. A post from another website would carry
     # that site's address, so it is refused (this blocks cross-site request forgery).
+    # Used by: Handler.do_POST.
     def same_origin(self):
         origin = self.headers.get("Origin")
         if origin is None:
             return True
         return urllib.parse.urlparse(origin).netloc in ALLOWED_HOSTS
 
+    # Used by: Handler.do_POST, Handler.current_user, Handler.theme.
     def cookie(self, name):
         try:
             cookie = http.cookies.SimpleCookie(self.headers.get("Cookie", ""))
@@ -1206,11 +1432,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return cookie[name].value
         return ""
 
+    # Used by: Handler.do_GET, Handler.do_POST.
     def current_user(self):
         return accounts.user_for_token(self.cookie("session"))
 
     # HttpOnly: page code cannot read it. SameSite=Lax: other sites cannot send it with
     # their forms. Secure (only over HTTPS) when we sit behind an HTTPS proxy like Dokploy's.
+    # Used by: Handler.do_POST.
     def session_cookie(self, token):
         cookie = f"session={token}; Path=/; Max-Age={accounts.SESSION_DAYS * 86400}; HttpOnly; SameSite=Lax"
         if self.headers.get("X-Forwarded-Proto") == "https":
@@ -1218,29 +1446,34 @@ class Handler(http.server.BaseHTTPRequestHandler):
         return cookie
 
     # The theme lives in a cookie, so the choice is remembered on the next visit.
+    # Used by: Handler.send_html.
     def theme(self):
         theme = self.cookie("theme")
         if theme in THEMES:
             return theme
         return "auto"
 
+    # Used by: Handler.do_GET.
     def set_theme(self, theme):
         if theme not in THEMES:
             theme = "auto"
         # Go back to the page the user was on, but only if it is one of our own pages.
         back = "/"
         referer = urllib.parse.urlparse(self.headers.get("Referer", ""))
-        if referer.netloc in ALLOWED_HOSTS and referer.path in ["/", "/log", "/day", "/setup", "/login", "/signup"]:
+        pages = ["/", "/log", "/day", "/calendar", "/setup", "/login", "/signup"]
+        if referer.netloc in ALLOWED_HOSTS and referer.path in pages:
             back = referer.path
             if referer.query != "":
                 back = back + "?" + referer.query
         self.redirect(back, f"theme={theme}; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly")
 
     # Keep the terminal quiet instead of printing every request.
+    # Called by: http.server after each request (we replace its printing).
     def log_message(self, format, *args):
         pass
 
 
+# Used by: python3 server.py (the if __name__ block).
 def run_server():
     db.init_db()
     try:

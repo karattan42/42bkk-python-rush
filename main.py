@@ -1,5 +1,9 @@
+# Starts the terminal app: python3 main.py (over SSH with STREAKR_LOGIN=1).
+# Uses: calendar_view.py, db.py, home.py, login.py, menus.py, onboarding.py, plans.py, ui.py
+# Used by: nobody imports it; run it with python3 main.py
 import os
 
+import calendar_view
 import db
 import home
 import login
@@ -10,6 +14,7 @@ import ui
 
 
 # Returns the goodbye message, which is printed after the app hands the terminal back.
+# Used by: run.
 def main():
     db.init_db()
     ui.splash()
@@ -44,11 +49,15 @@ def main():
             menus.menu_manage(state)
         elif choice == "5":
             menus.menu_profile(state)
+        elif choice == "6":
+            calendar_view.menu_calendar(state)
+            continue  # the calendar has its own way back, so no "Press Enter" here
         else:
-            ui.error("Please choose 0-5.")
+            ui.error("Please choose 0-6.")
         ui.pause()
 
 
+# Used by: python3 main.py (the if __name__ block).
 def run():
     ui.enter_app_screen()
     try:

@@ -1,3 +1,6 @@
+# First run in the terminal: 5 questions that make the profile.
+# Uses: fitness.py, inputs.py, ui.py
+# Used by: main.py, menus.py
 import fitness
 import inputs
 import ui
@@ -6,12 +9,14 @@ STEPS = 5
 GENDERS = {"Male": "male", "Female": "female", "Not specified": "none"}
 
 
+# Used by: run_onboarding.
 def step_name(profile):
     name = inputs.ask_text("What should I call you? ")
     profile["name"] = name
     return f"Nice to meet you, {name}!"
 
 
+# Used by: run_onboarding.
 def step_gender(profile):
     label = inputs.ask_choice("Gender (used for your daily calorie estimate):",
                               list(GENDERS.keys()), True)
@@ -21,6 +26,7 @@ def step_gender(profile):
     return "Got it."
 
 
+# Used by: run_onboarding.
 def step_body(profile):
     age = inputs.ask_int("Age (10-100): ", 10, 100, True)
     if age is None:
@@ -37,6 +43,7 @@ def step_body(profile):
     return f"Your body burns about {round(fitness.bmr(profile))} kcal a day at rest."
 
 
+# Used by: run_onboarding.
 def step_activities(profile):
     activities = inputs.ask_multi("Which activities do you do?",
                                   list(fitness.MET.keys()), True)
@@ -46,6 +53,7 @@ def step_activities(profile):
     return f"{', '.join(activities)}. Great mix!"
 
 
+# Used by: run_onboarding.
 def step_goal(profile):
     goal = inputs.ask_int("How many days a week do you want to train? (1-7): ", 1, 7, True)
     if goal is None:
@@ -56,6 +64,7 @@ def step_goal(profile):
 
 # Each step fills part of the profile and returns the mascot's reply,
 # or None when the user typed b to go back one step.
+# Used by: main.main.
 def run_onboarding():
     profile = {"name": "", "gender": "none", "age": 0, "height": 0,
                "weight": 0, "weekly_goal": 1, "activities": []}

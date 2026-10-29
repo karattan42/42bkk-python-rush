@@ -1,3 +1,6 @@
+# Terminal menus 1, 3, 4 and 5: log a workout, history & stats, search & edit, profile.
+# Uses: db.py, fitness.py, home.py, inputs.py, onboarding.py, rules.py, stats.py, ui.py
+# Used by: calendar_view.py, main.py, plans.py
 import datetime
 
 import db
@@ -10,6 +13,7 @@ import stats
 import ui
 
 
+# Used by: calendar_view.show_day, print_logs, menu_log.
 def nice_date(iso):
     day = datetime.datetime.strptime(iso, "%Y-%m-%d").date()
     return f"{day.strftime('%a')} {day.day} {day.strftime('%b %Y')}"
@@ -17,6 +21,7 @@ def nice_date(iso):
 
 # Workouts grouped under their date. Each one: a bar in the activity's color, what was
 # trained, its ID, the minutes and kcal on the right, and the exercises underneath.
+# Used by: calendar_view.show_day, menu_history, menu_manage, delete_log.
 def print_logs(logs):
     last_date = None
     for log in logs:
@@ -35,6 +40,7 @@ def print_logs(logs):
 
 
 # Rule 2 check with the message. Returns True when it is OK to continue.
+# Used by: menu_log, edit_log.
 def not_duplicate(logs, date, activity, focus, skip_id=None):
     if rules.is_duplicate(logs, date, activity, focus, skip_id):
         ui.error(f"You already logged {activity} / {focus} on {date}.")
@@ -44,6 +50,7 @@ def not_duplicate(logs, date, activity, focus, skip_id=None):
 
 
 # Rule 1 check with the warning. Returns True when it is OK to continue.
+# Used by: menu_log, edit_log.
 def rest_day_ok(logs, date, activity, focus, skip_id=None):
     if rules.needs_rest(logs, date, activity, focus, skip_id):
         ui.warn(f"You trained {activity} / {focus} the day before or after {date}.")
@@ -56,6 +63,7 @@ def rest_day_ok(logs, date, activity, focus, skip_id=None):
 
 # for_plan=True also checks rule 4 (1-10 exercises, no repeats).
 # For a log, repeats are simply dropped.
+# Used by: menu_log, edit_log, plans.create_plan.
 def pick_exercises(library, activity, focus, for_plan=False):
     # Print the exercises under their group names, numbered straight through.
     names = []
@@ -101,17 +109,23 @@ def pick_exercises(library, activity, focus, for_plan=False):
 
 
 # Suggest kcal from MET; Enter accepts it, or the user types their own number.
+# Used by: menu_log, edit_log.
 def ask_calories(state, activity, duration):
     estimate = fitness.estimate_kcal(activity, state["profile"]["weight"], duration)
     return inputs.ask_int(f"Calories burned (Enter = {estimate}, 0-3000): ", 0, 3000,
                           default=estimate)
 
 
-def menu_log(state, preset=None):
+# preset: a plan to log. date: a day chosen on the calendar (otherwise we ask).
+# Used by: calendar_view.show_day, main.main, plans.start_plan.
+def menu_log(state, preset=None, date=None):
     ui.title("Log workout")
     library = state["library"]
     logs = state["logs"]
-    date = inputs.ask_date("Date YYYY-MM-DD (Enter = today): ")
+    if date is None:
+        date = inputs.ask_date("Date YYYY-MM-DD (Enter = today): ")
+    else:
+        print("  " + ui.paint("Date: " + nice_date(date), None, True))
     if preset is None:
         activity = inputs.ask_choice("Activity:", state["profile"]["activities"])
         focus = inputs.ask_choice("Focus:", list(library[activity].keys()))
@@ -144,6 +158,7 @@ def menu_log(state, preset=None):
 
 
 # One bar split into each activity's share of all workouts, with a legend.
+# Used by: menu_history.
 def mix_lines(logs):
     counts = stats.count_by(logs, "activity")
     size = 36
@@ -165,6 +180,7 @@ def mix_lines(logs):
     return [bar, legend.rstrip()]
 
 
+# Used by: main.main.
 def menu_history(state):
     logs = state["logs"]
     ui.title("History & stats")
@@ -196,6 +212,7 @@ def menu_history(state):
     print_logs(stats.sort_logs(logs, "date", True))
 
 
+# Used by: main.main.
 def menu_manage(state):
     logs = state["logs"]
     ui.title("Search & edit")
@@ -235,6 +252,7 @@ def menu_manage(state):
         delete_log(state, log)
 
 
+# Used by: menu_manage.
 def edit_log(state, log):
     logs = state["logs"]
     field = inputs.ask_choice("Edit which field?", ["Date", "Duration", "Calories", "Exercises"])
@@ -255,6 +273,7 @@ def edit_log(state, log):
     ui.success(f"Workout #{log['id']} updated.")
 
 
+# Used by: menu_manage.
 def delete_log(state, log):
     print_logs([log])
     if inputs.ask_yes_no(f"Delete workout #{log['id']}?"):
@@ -265,6 +284,7 @@ def delete_log(state, log):
         print("  " + ui.paint("Kept.", ui.MUTED))
 
 
+# Used by: menu_profile.
 def add_exercise(state):
     library = state["library"]
     activity = inputs.ask_choice("Activity:", state["profile"]["activities"])
@@ -281,6 +301,7 @@ def add_exercise(state):
     ui.success(f"Added {name} to {activity} / {focus}.")
 
 
+# Used by: main.main.
 def menu_profile(state):
     profile = state["profile"]
     while True:

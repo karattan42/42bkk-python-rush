@@ -1,4 +1,5 @@
 """Run main.py as a real program and type into it, like a person at the defense."""
+import datetime
 import json
 import os
 import shutil
@@ -119,7 +120,7 @@ class Terminal(unittest.TestCase):
         self.seed()
         done = self.run_program("main.py", ["x", ""])  # input then ends, like Ctrl-D
         self.assertEqual(done.returncode, 0)
-        self.assertIn("Please choose 0-5", done.stdout)
+        self.assertIn("Please choose 0-6", done.stdout)
         self.assertIn("Bye!", done.stdout)
 
     def test_exercise_list_is_grouped_and_numbers_match(self):
@@ -135,6 +136,37 @@ class Terminal(unittest.TestCase):
         self.seed()
         for log in self.rows("logs"):
             self.assertEqual(log["user_id"], 1)
+
+    def test_calendar_moves_between_months_and_opens_days(self):
+        self.seed()
+        today = datetime.date.today()
+        out = self.app("6", "n", "p", "40", "x", "b", "0")
+        self.assertIn(today.strftime("%B %Y").upper(), out)
+        self.assertIn("That month has not happened yet.", out)
+        self.assertIn("Pick a day from 1 to", out)
+        self.assertIn("Type p, n, a day number, or b.", out)
+        self.assertIn("WORKOUTS", out)
+        self.assertNotIn("Press Enter to go back", out.split("Calendar")[-1])
+
+    def test_open_a_day_and_log_a_forgotten_workout(self):
+        self.seed()
+        today = datetime.date.today()
+        if today.day == 1:
+            self.skipTest("needs an earlier day in this month")
+        missing = None
+        logged = set(log["date"] for log in self.rows("logs"))
+        for number in range(today.day - 1, 0, -1):
+            if datetime.date(today.year, today.month, number).isoformat() not in logged:
+                missing = number
+                break
+        if missing is None:
+            self.skipTest("every day this month already has a workout")
+        date = datetime.date(today.year, today.month, missing).isoformat()
+        # Yoga (choice 2) has no rest-day question, so the answers always line up.
+        out = self.app("6", str(missing), "l", "2", "1", "1", "45", "", "", "b", "0")
+        self.assertIn("Rest day. Nothing logged.", out)
+        self.assertIn("Saved workout", out)
+        self.assertIn(date, [log["date"] for log in self.rows("logs")])
 
 
 if __name__ == "__main__":

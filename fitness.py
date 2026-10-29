@@ -1,8 +1,12 @@
 # MET = how many times harder than sitting still each activity is.
+# Calories (MET), BMR and the built-in exercise library.
+# Used by: db.py, menus.py, onboarding.py, seed.py, server.py
 MET = {"Gym": 5.0, "Yoga": 2.5, "Pilates": 3.0, "Cardio": 7.0}
 
 
 # kcal = MET x weight (kg) x hours
+# Used by: menus.ask_calories, seed.main, server.choose_html, server.aside_html,
+# server.save_from_form.
 def estimate_kcal(activity, weight, minutes):
     hours = minutes / 60
     return round(MET[activity] * weight * hours)
@@ -10,6 +14,7 @@ def estimate_kcal(activity, weight, minutes):
 
 # Mifflin-St Jeor: calories the body burns per day at rest.
 # "none" (not specified) uses the average of the male (+5) and female (-161) versions.
+# Used by: menus.menu_profile, onboarding.step_body.
 def bmr(profile):
     base = 10 * profile["weight"] + 6.25 * profile["height"] - 5 * profile["age"]
     if profile["gender"] == "male":
@@ -91,6 +96,7 @@ EXERCISE_GROUPS = {
 
 # activity -> focus -> list of exercise names (the groups flattened).
 # A function (not a constant) so every call returns a fresh copy we can add to.
+# Used by: db.init_db.
 def default_library():
     library = {}
     for activity in EXERCISE_GROUPS:
@@ -106,6 +112,7 @@ def default_library():
 
 # The exercises in library[activity][focus] sorted into their groups, as a list of
 # (group, names). Exercises a person added themselves go into "Your own" at the end.
+# Used by: menus.pick_exercises, server.exercise_picker.
 def grouped_exercises(library, activity, focus):
     available = library[activity][focus]
     groups = []

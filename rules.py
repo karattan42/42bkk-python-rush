@@ -1,8 +1,11 @@
+# The 4 business rules. No print or input here: each one only answers the question.
+# Used by: menus.py, plans.py, server.py
 import datetime
 
 
 # Rule 2: the same day + activity + focus may only be logged once.
 # skip_id lets an edited log ignore itself.
+# Used by: menus.not_duplicate, server.save_from_form.
 def is_duplicate(logs, date, activity, focus, skip_id=None):
     for log in logs:
         if log["id"] == skip_id:
@@ -13,6 +16,7 @@ def is_duplicate(logs, date, activity, focus, skip_id=None):
 
 
 # Rest days only matter for Gym and Cardio HIIT. Yoga and Pilates are fine every day.
+# Used by: needs_rest, server.aside_html.
 def rest_rule_applies(activity, focus):
     if activity == "Gym":
         return True
@@ -22,6 +26,7 @@ def rest_rule_applies(activity, focus):
 
 
 # Rule 1: warn when the same group is trained on the day before or the day after.
+# Used by: menus.rest_day_ok, server.save_from_form.
 def needs_rest(logs, date, activity, focus, skip_id=None):
     if not rest_rule_applies(activity, focus):
         return False
@@ -38,6 +43,7 @@ def needs_rest(logs, date, activity, focus, skip_id=None):
 
 
 # Rule 3: every exercise must belong to the chosen focus.
+# Used by: menus.pick_exercises, server.save_from_form.
 def valid_exercises(library, activity, focus, names):
     allowed = library[activity][focus]
     bad_names = []
@@ -49,6 +55,7 @@ def valid_exercises(library, activity, focus, names):
 
 
 # Rule 4: a plan has 1-10 exercises and no exercise twice.
+# Used by: menus.pick_exercises, plans.edit_plan.
 def valid_plan(exercises):
     if len(exercises) < 1 or len(exercises) > 10:
         return False, "A plan needs 1 to 10 exercises."

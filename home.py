@@ -1,4 +1,6 @@
 # The home screen (main menu): streak, last 4 weeks, today, totals and the menu.
+# Uses: stats.py, ui.py
+# Used by: calendar_view.py, main.py, menus.py, server.py
 import datetime
 import time
 
@@ -6,12 +8,13 @@ import stats
 import ui
 
 MENU = [("1", "Log workout"), ("2", "My plans"), ("3", "History & stats"),
-        ("4", "Search & edit"), ("5", "Profile"), ("0", "Exit")]
+        ("4", "Search & edit"), ("5", "Profile"), ("6", "Calendar"), ("0", "Exit")]
 
 SPARK = "▁▂▃▄▅▆▇█"
 
 
 # Sleepy after 3+ days off, flexing on a 3+ day streak, happy otherwise.
+# Used by: screen_lines, server.streak_html.
 def pick_mood(logs):
     days_off = stats.days_since_last(logs)
     if days_off is not None and days_off >= 3:
@@ -21,6 +24,7 @@ def pick_mood(logs):
     return "happy"
 
 
+# Used by: screen_lines.
 def logged_today(logs):
     today = datetime.date.today().isoformat()
     for log in logs:
@@ -29,6 +33,7 @@ def logged_today(logs):
     return False
 
 
+# Used by: screen_lines.
 def minutes_this_week(logs):
     today = datetime.date.today()
     monday = (today - datetime.timedelta(days=today.weekday())).isoformat()
@@ -39,6 +44,7 @@ def minutes_this_week(logs):
     return total
 
 
+# Used by: screen_lines.
 def streak_card(state, shown_streak):
     logs = state["logs"]
     goal = state["profile"]["weekly_goal"]
@@ -65,6 +71,7 @@ def streak_card(state, shown_streak):
 
 # The last 4 weeks, Monday first, one colored square per day. Squares appear one by
 # one while `reveal` grows from 0 to 28.
+# Used by: screen_lines, menus.menu_history.
 def month_card(logs, reveal):
     first_activity = {}
     for log in logs:
@@ -102,6 +109,7 @@ def month_card(logs, reveal):
 
 
 # One bar per day for the last 14 days; `grow` (0 to 1) animates the bars upwards.
+# Used by: screen_lines, menus.menu_history.
 def spark_line(logs, grow):
     today = datetime.date.today()
     days = []
@@ -130,17 +138,23 @@ def spark_line(logs, grow):
     return line
 
 
+# Used by: calendar_view.calendar_lines, calendar_view.show_day, screen_lines,
+# menus.menu_history.
 def number(label, value):
     return ui.paint(label.upper(), ui.MUTED) + " " + ui.paint(value, None, True)
 
 
+# Used by: show.
 def screen_lines(state, shown_streak, reveal, grow):
     logs = state["logs"]
     wide = ui.width() >= 66
     today = datetime.date.today()
     lines = ["", ui.gradient("STREAKR", ui.ORANGE, ui.PINK) + "   "
              + ui.paint(f"Hi {state['profile']['name']}!", None, True)
-             + ui.paint("  ·  " + f"{today.strftime('%A')} {today.day} {today.strftime('%B')}", ui.MUTED), ""]
+             + ui.paint("  ·  " + f"{today.strftime('%A')} {today.day} {today.strftime('%B')}", ui.MUTED)]
+    if ui.HALLOWEEN and wide:
+        lines[1] = lines[1] + "  " + ui.gradient("Happy Halloween", ui.ORANGE, ui.PINK) + ui.paint(" ᗣ", ui.PINK, True)
+    lines.append("")
     if wide:
         lines = lines + ui.side_by_side(streak_card(state, shown_streak), month_card(logs, reveal), 6)
     else:
@@ -183,6 +197,7 @@ def screen_lines(state, shown_streak, reveal, grow):
 
 # Show the home screen. With animate=True the streak counts up, the calendar fills in
 # and the bars grow (about half a second); without a real terminal it just prints.
+# Used by: main.main.
 def show(state, animate):
     streak = stats.current_streak(state["logs"])
     if not ui.USE_COLOR:

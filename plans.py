@@ -1,3 +1,6 @@
+# Terminal menu 2: create, randomize, edit, start and delete workout plans.
+# Uses: db.py, inputs.py, menus.py, rules.py, stats.py, ui.py
+# Used by: main.py
 import db
 import inputs
 import menus
@@ -6,6 +9,7 @@ import stats
 import ui
 
 
+# Used by: choose_plan, menu_plans.
 def print_plans(plans):
     for i in range(len(plans)):
         plan = plans[i]
@@ -15,6 +19,7 @@ def print_plans(plans):
 
 
 # Returns the chosen plan, or None when there are no plans yet.
+# Used by: menu_plans.
 def choose_plan(state):
     plans = state["plans"]
     if len(plans) == 0:
@@ -25,6 +30,7 @@ def choose_plan(state):
     return plans[number - 1]
 
 
+# Used by: main.main.
 def menu_plans(state):
     while True:
         ui.title("My plans")
@@ -53,6 +59,7 @@ def menu_plans(state):
                 delete_plan(state, plan)
 
 
+# Used by: create_plan, random_plan.
 def save_new_plan(state, name, activity, focus, exercises):
     plan = {"name": name, "activity": activity, "focus": focus, "exercises": exercises}
     db.save_plan(plan, state["user_id"])
@@ -60,6 +67,7 @@ def save_new_plan(state, name, activity, focus, exercises):
     ui.success(f"Saved plan '{name}'.")
 
 
+# Used by: menu_plans.
 def create_plan(state):
     library = state["library"]
     name = inputs.ask_text("Plan name: ")
@@ -69,6 +77,7 @@ def create_plan(state):
     save_new_plan(state, name, activity, focus, exercises)
 
 
+# Used by: menu_plans.
 def random_plan(state):
     library = state["library"]
     activity = inputs.ask_choice("Activity:", state["profile"]["activities"])
@@ -98,6 +107,7 @@ def random_plan(state):
 
 
 # Exercises in the plan's focus that are not in the plan yet.
+# Used by: edit_plan.
 def unused_exercises(state, plan):
     unused = []
     for name in state["library"][plan["activity"]][plan["focus"]]:
@@ -106,6 +116,7 @@ def unused_exercises(state, plan):
     return unused
 
 
+# Used by: menu_plans.
 def edit_plan(state, plan):
     while True:
         print()
@@ -141,6 +152,7 @@ def edit_plan(state, plan):
         ui.success("Plan updated.")
 
 
+# Used by: menu_plans, random_plan.
 def start_plan(state, plan):
     ui.header("My plans", plan["name"])
     lines = []
@@ -153,6 +165,7 @@ def start_plan(state, plan):
     menus.menu_log(state, plan)
 
 
+# Used by: menu_plans.
 def delete_plan(state, plan):
     if inputs.ask_yes_no(f"Delete plan '{plan['name']}'?"):
         db.delete_plan(plan["id"])

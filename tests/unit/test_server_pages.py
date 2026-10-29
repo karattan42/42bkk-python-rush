@@ -1,4 +1,5 @@
 """The web view's form checks and HTML, called directly (no network)."""
+import datetime
 import unittest
 
 import db
@@ -231,6 +232,54 @@ class DayPage(unittest.TestCase):
     def test_choose_page_carries_the_date(self):
         html_text = server.choose_html(self.state(), "", day(-5))
         self.assertIn(f"name='date' value='{day(-5)}'", html_text)
+
+
+class CalendarPage(unittest.TestCase):
+    def setUp(self):
+        use_temp_db(self)
+        self.user_id = new_user_with_profile()
+        db.save_log({"date": day(0), "activity": "Gym", "focus": "Upper Body",
+                     "exercises": ["Push Up"], "duration": 40, "calories": 233}, self.user_id)
+        db.save_log({"date": day(0), "activity": "Yoga", "focus": "Relax",
+                     "exercises": ["Cat-Cow"], "duration": 20, "calories": 58}, self.user_id)
+
+    def state(self):
+        state = db.load_all(self.user_id)
+        state["user_id"] = self.user_id
+        return state
+
+    def test_this_month(self):
+        today = datetime.date.today()
+        html_text = server.calendar_html(self.state(), today.year, today.month)
+        self.assertIn(today.strftime("%B %Y"), html_text)
+        self.assertIn(f"<a class='cal-day done today' href='/day?date={day(0)}'", html_text)
+        self.assertIn("<b>Gym</b>", html_text)
+        self.assertIn("<b>Yoga</b>", html_text)
+        self.assertIn("60<span class='unit'> min</span>", html_text)
+        self.assertIn("<div class='num'>2</div>", html_text)        # workouts this month
+        self.assertNotIn("Next &rarr;</a>", html_text)              # no link into the future
+        self.assertEqual(html_text.count("class='cal-day"), server.stats.days_in_month(today.year, today.month))
+
+    def test_past_month_links_forward(self):
+        today = datetime.date.today()
+        year, month = server.stats.add_months(today.year, today.month, -1)
+        html_text = server.calendar_html(self.state(), year, month)
+        self.assertIn("href='/calendar'>Today</a>", html_text)
+        self.assertIn(server.month_link(today.year, today.month), html_text)
+        self.assertNotIn("cal-day done", html_text)
+
+    def test_check_month(self):
+        today = datetime.date.today()
+        self.assertEqual(server.check_month(f"{today.year}-{today.month:02d}"), (today.year, today.month))
+        self.assertEqual(server.check_month("2024-02"), (2024, 2))
+        next_year, next_month = server.stats.add_months(today.year, today.month, 1)
+        for bad in [f"{next_year}-{next_month:02d}", "1999-12", "2026-13", "2026", "abc", "2026-10-05"]:
+            self.assertIsNone(server.check_month(bad), bad)
+
+    def test_dashboard_and_day_link_to_the_calendar(self):
+        self.assertIn("href='/calendar'", server.dashboard_html(self.state(), "", False))
+        today = datetime.date.today()
+        self.assertIn(server.month_link(today.year, today.month), server.day_html(self.state(), day(0)))
 
 
 class ExercisePicker(unittest.TestCase):

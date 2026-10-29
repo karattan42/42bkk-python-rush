@@ -40,6 +40,7 @@ python3 server.py    # (ไม่บังคับ) web view ที่ http://l
 
 - ข้อมูลเก็บใน `gym.db` (SQLite) ข้างไฟล์โค้ด สร้างให้อัตโนมัติตอนรันครั้งแรก
 - ถ้า terminal แสดงสีเพี้ยน ให้รัน `NO_COLOR=1 python3 main.py`
+- ช่วง 24 ต.ค. – 1 พ.ย. แอปใน terminal จะเป็นธีม Halloween เอง (สีฟักทอง/ม่วง, ฟักทอง pixel art ข้างโลโก้, ค้างคาวบินตอนเปิด, ผีและค้างคาวใน confetti ทั้งหมดเป็นตัวอักษรสี ไม่ใช้ emoji) บังคับได้ด้วย `STREAKR_THEME=halloween` หรือ `STREAKR_THEME=normal`
 - `seed.py` จะถามก่อนลบ `gym.db` เดิม วันที่ในข้อมูลตัวอย่างคิดจากวันนี้ ข้อมูลจึงจบที่เมื่อวาน และ streak ยังนับต่อได้
 
 ## เมนู
@@ -51,6 +52,7 @@ python3 server.py    # (ไม่บังคับ) web view ที่ http://l
 | 3 | History & stats | ประวัติเรียงตามวันที่, เวลาและ kcal รวม, streak ปัจจุบันและดีที่สุด, เป้าหมายรายสัปดาห์, จำนวนครั้งต่อ activity และท่าที่เล่นบ่อยที่สุด |
 | 4 | Search / edit / delete | ค้นด้วย ID, วันที่ หรือ activity แล้วแก้หรือลบ (ถามยืนยันก่อนลบ) |
 | 5 | Profile & library | แก้ข้อมูลส่วนตัว, เลือก activity ที่เล่น, ดู BMR และเพิ่มท่าของตัวเอง |
+| 6 | Calendar | ปฏิทินทีละเดือน สีตาม activity, `p` / `n` เปลี่ยนเดือน, พิมพ์เลขวันเพื่อดูวันนั้น และกด `L` เพื่อ log ย้อนหลังให้วันนั้น (บนเว็บอยู่ที่ `/calendar`) |
 | 0 | Exit | ออก (ข้อมูลถูก save ทุกครั้งที่มีการเปลี่ยนแปลงอยู่แล้ว) |
 
 ## Business rules
@@ -84,6 +86,7 @@ python3 server.py    # (ไม่บังคับ) web view ที่ http://l
 | `onboarding.py` | ตั้งค่าครั้งแรก 5 ขั้นตอน (พิมพ์ `b` เพื่อย้อนกลับ) |
 | `menus.py` | เมนู log / history / search / profile |
 | `plans.py` | เมนู My plans |
+| `calendar_view.py` | เมนู Calendar (ปฏิทินรายเดือน) |
 | `inputs.py` | ฟังก์ชันถาม input แบบวนจนกว่าจะถูก |
 | `rules.py` | business rules ทั้ง 4 ข้อ |
 | `stats.py` | ประมวลผลข้อมูล: sum, count, sort (insertion sort), search, streak |
@@ -112,7 +115,7 @@ python3 server.py    # (ไม่บังคับ) web view ที่ http://l
 - แต่ละคนสมัครด้วย username + password แล้วตั้งค่า profile ครั้งแรก จากนั้นเห็นเฉพาะข้อมูลของตัวเอง
 - ทุกแถวใน `logs`, `plans` และท่าที่เพิ่มเองมี `user_id` แอปใน terminal ใช้บัญชี `local` (id 1) เสมอ ซึ่ง login จากเว็บไม่ได้
 - `gym.db` เก่าที่ยังไม่มี `user_id` จะถูกเพิ่มคอลัมน์ให้อัตโนมัติ และข้อมูลเดิมเป็นของบัญชี `local`
-- ปุ่ม Auto / Light / Dark ด้านบนเลือกธีม และจำไว้ใน cookie
+- ปุ่ม Auto / Light / Dark / 🎃 Halloween ด้านบนเลือกธีม และจำไว้ใน cookie
 
 ### ความปลอดภัย
 

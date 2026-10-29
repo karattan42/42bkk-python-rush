@@ -2,6 +2,8 @@
 # The schedule follows every business rule, and it ends yesterday, so at the defense:
 #   - the streak is 5 days and still alive (today is not logged yet)
 #   - logging Gym / Upper Body today triggers the rest-day warning
+# Uses: db.py, fitness.py, inputs.py
+# Used by: nobody imports it; run it with python3 seed.py
 import datetime
 import os
 
@@ -46,6 +48,7 @@ PLANS = [
 ]
 
 
+# Used by: python3 seed.py (the if __name__ block).
 def main():
     if os.path.exists(db.DB_FILE):
         if not inputs.ask_yes_no("gym.db already exists. Delete it and load demo data?"):

@@ -202,6 +202,22 @@ class WebServer(unittest.TestCase):
         text = self.request("GET", f"/log?choice=Yoga%7CRelax&date={day(3)}", cookie=cookie)[1]
         self.assertIn(f"id='date' type='date' name='date' value='{day(0)}'", text)
 
+    # Calendar
+
+    def test_calendar_page_and_bad_months(self):
+        cookie = self.sign_up_and_set_up()
+        self.log(cookie, date=day(0))
+        response, text = self.request("GET", "/calendar", cookie=cookie)
+        self.assertEqual(response.status, 200)
+        self.assertIn("<b>Yoga</b>", text)
+        self.assertEqual(self.request("GET", "/calendar?month=2024-02", cookie=cookie)[0].status, 200)
+        for bad in ["2999-01", "nope", "2026-00", "<script>"]:
+            response, text = self.request("GET", "/calendar?month=" + urllib.parse.quote(bad),
+                                          cookie=cookie)
+            self.assertEqual(response.status, 303, bad)
+            self.assertEqual(response.getheader("Location"), "/calendar")
+        self.assertEqual(self.request("GET", "/calendar")[0].getheader("Location"), "/login")
+
     # Theme
 
     def test_theme_is_remembered_and_redirect_stays_on_site(self):
@@ -213,6 +229,14 @@ class WebServer(unittest.TestCase):
         self.assertIn("data-theme='dark'", self.request("GET", "/login", cookie=cookie)[1])
         evil = self.request("GET", "/theme?set=light", headers={"Referer": "https://evil.example/x"})[0]
         self.assertEqual(evil.getheader("Location"), "/")
+
+    def test_halloween_theme(self):
+        response = self.request("GET", "/theme?set=halloween")[0]
+        cookie = response.getheader("Set-Cookie").split(";")[0]
+        self.assertEqual(cookie, "theme=halloween")
+        text = self.request("GET", "/login", cookie=cookie)[1]
+        self.assertIn("data-theme='halloween'", text)
+        self.assertIn("href='/theme?set=halloween'", text)
 
     def test_bad_theme_values_fall_back_to_auto(self):
         self.assertIn("theme=auto", self.request("GET", "/theme?set=%3Cx%3E")[0].getheader("Set-Cookie"))

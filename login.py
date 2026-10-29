@@ -1,5 +1,7 @@
 # Login screen for the terminal app when people reach it over SSH (STREAKR_LOGIN=1).
 # It uses the same accounts as the web view, so one login works in both places.
+# Uses: accounts.py, db.py, inputs.py, ui.py
+# Used by: main.py
 import getpass
 import sys
 import time
@@ -13,6 +15,7 @@ MAX_WRONG = 3        # wrong logins in one visit before the program closes
 BACK = "back"
 
 
+# Used by: log_in, create_account.
 def ask_password(prompt):
     # getpass hides what is typed. When the input is not a real terminal (tests), it
     # cannot hide anything, so read the line normally.
@@ -22,6 +25,7 @@ def ask_password(prompt):
 
 
 # One try. Returns the account id, None for a wrong login, or BACK.
+# Used by: run_login.
 def log_in():
     ui.header("Log in")
     print("  " + ui.paint("(type b to go back)", ui.MUTED))
@@ -37,6 +41,7 @@ def log_in():
 
 
 # Returns the new account id, or BACK.
+# Used by: run_login.
 def create_account():
     ui.header("Create account")
     print("  " + ui.paint("(type b to go back)", ui.MUTED))
@@ -71,6 +76,7 @@ def create_account():
 
 
 # Returns the account id of the person who logged in, or None to quit.
+# Used by: main.main.
 def run_login():
     wrong = 0
     while True:

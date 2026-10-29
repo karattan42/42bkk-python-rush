@@ -114,5 +114,43 @@ class RandomWorkout(unittest.TestCase):
         self.assertEqual(sorted(names), sorted(library["Cardio"]["Cycle"]))
 
 
+class Months(unittest.TestCase):
+    def test_add_months_across_years(self):
+        self.assertEqual(stats.add_months(2026, 12, 1), (2027, 1))
+        self.assertEqual(stats.add_months(2026, 1, -1), (2025, 12))
+        self.assertEqual(stats.add_months(2026, 5, -17), (2024, 12))
+
+    def test_days_in_month(self):
+        self.assertEqual(stats.days_in_month(2026, 10), 31)
+        self.assertEqual(stats.days_in_month(2026, 2), 28)
+        self.assertEqual(stats.days_in_month(2024, 2), 29)
+
+    def test_month_weeks_start_on_monday(self):
+        weeks = stats.month_weeks(2026, 10)          # 1 October is a Thursday, the 31st a Saturday
+        self.assertEqual(weeks[0][:3], [None, None, None])
+        self.assertEqual(weeks[0][3], datetime.date(2026, 10, 1))
+        self.assertEqual(weeks[-1][5:], [datetime.date(2026, 10, 31), None])
+        days = []
+        for week in weeks:
+            self.assertEqual(len(week), 7)
+            for d in week:
+                if d is not None:
+                    days.append(d.day)
+        self.assertEqual(days, list(range(1, 32)))
+
+    def test_month_that_fills_whole_weeks(self):
+        weeks = stats.month_weeks(2021, 2)           # starts on Monday, 28 days
+        self.assertEqual(len(weeks), 4)
+        self.assertNotIn(None, weeks[0] + weeks[-1])
+
+    def test_logs_in_month_and_activities_by_date(self):
+        logs = [make_log(1, "2026-10-01"), make_log(2, "2026-10-31", "Yoga", "Relax"),
+                make_log(3, "2026-10-31", "Gym", "Lower Body"), make_log(4, "2026-10-31", "Yoga"),
+                make_log(5, "2026-11-01"), make_log(6, "2025-10-05")]
+        found = stats.logs_in_month(logs, 2026, 10)
+        self.assertEqual([log["id"] for log in found], [1, 2, 3, 4])
+        self.assertEqual(stats.activities_by_date(found)["2026-10-31"], ["Yoga", "Gym"])
+
+
 if __name__ == "__main__":
     unittest.main()
