@@ -71,10 +71,10 @@ def calendar_lines(state, year, month, reveal, note):
     for log in month_logs:
         if log["date"] not in days_trained:
             days_trained.append(log["date"])
-    totals = [home.number("workouts", str(len(month_logs))),
-              home.number("days", str(len(days_trained))),
-              home.number("min", f"{stats.total_of(month_logs, 'duration'):,}"),
-              home.number("kcal", f"{stats.total_of(month_logs, 'calories'):,}")]
+    totals = [home.label_value("workouts", str(len(month_logs))),
+              home.label_value("days", str(len(days_trained))),
+              home.label_value("min", f"{stats.total_of(month_logs, 'duration'):,}"),
+              home.label_value("kcal", f"{stats.total_of(month_logs, 'calories'):,}")]
     grid.append("   ".join(totals))
     legend = ""
     for activity in ui.ACTIVITY_COLORS:
@@ -122,8 +122,8 @@ def show_day(state, day):
     else:
         menus.print_logs(found)
         print()
-        print("  " + home.number("total", f"{stats.total_of(found, 'duration')} min")
-              + "   " + home.number("kcal", str(stats.total_of(found, 'calories'))))
+        print("  " + home.label_value("total", f"{stats.total_of(found, 'duration')} min")
+              + "   " + home.label_value("kcal", str(stats.total_of(found, 'calories'))))
     print()
     print(ui.option("L", "Log a workout on this day"))
     print("  " + ui.paint("Enter = back to the calendar", ui.MUTED))
@@ -133,6 +133,7 @@ def show_day(state, day):
         ui.pause()
 
 
+# Menu 6: show a month and read keys until the user goes back.
 # Used by: main.main.
 def menu_calendar(state):
     today = datetime.date.today()

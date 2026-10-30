@@ -9,6 +9,7 @@ import stats
 import ui
 
 
+# Numbered list of plans with their exercises under each name.
 # Used by: choose_plan, menu_plans.
 def print_plans(plans):
     for i in range(len(plans)):
@@ -30,6 +31,7 @@ def choose_plan(state):
     return plans[number - 1]
 
 
+# Menu 2: create, random, edit, start or delete plans.
 # Used by: main.main.
 def menu_plans(state):
     while True:
@@ -56,9 +58,10 @@ def menu_plans(state):
                 start_plan(state, plan)
                 return
             else:
-                delete_plan(state, plan)
+                confirm_delete_plan(state, plan)
 
 
+# Save a plan in the database and in state.
 # Used by: create_plan, random_plan.
 def save_new_plan(state, name, activity, focus, exercises):
     plan = {"name": name, "activity": activity, "focus": focus, "exercises": exercises}
@@ -67,6 +70,7 @@ def save_new_plan(state, name, activity, focus, exercises):
     ui.success(f"Saved plan '{name}'.")
 
 
+# Make a plan by hand: name, activity, focus, exercises.
 # Used by: menu_plans.
 def create_plan(state):
     library = state["library"]
@@ -77,6 +81,7 @@ def create_plan(state):
     save_new_plan(state, name, activity, focus, exercises)
 
 
+# Make a plan with random exercises from the library, then offer to save or start it.
 # Used by: menu_plans.
 def random_plan(state):
     library = state["library"]
@@ -116,6 +121,7 @@ def unused_exercises(state, plan):
     return unused
 
 
+# Add, remove, swap exercises or rename, until Back.
 # Used by: menu_plans.
 def edit_plan(state, plan):
     while True:
@@ -152,6 +158,7 @@ def edit_plan(state, plan):
         ui.success("Plan updated.")
 
 
+# Show the plan as a checklist, then log it as a workout.
 # Used by: menu_plans, random_plan.
 def start_plan(state, plan):
     ui.header("My plans", plan["name"])
@@ -165,8 +172,9 @@ def start_plan(state, plan):
     menus.menu_log(state, plan)
 
 
+# Delete a plan after asking y/n.
 # Used by: menu_plans.
-def delete_plan(state, plan):
+def confirm_delete_plan(state, plan):
     if inputs.ask_yes_no(f"Delete plan '{plan['name']}'?"):
         db.delete_plan(plan["id"])
         state["plans"].remove(plan)

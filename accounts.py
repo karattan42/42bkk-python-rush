@@ -20,6 +20,7 @@ MAX_TRACKED = 10000          # past this many rows, forget usernames that are no
 # program, so a counter in memory would start from zero each time someone reconnects.
 
 
+# The login_fails row for this username, or None if it has no wrong tries.
 # Used by: record_failed_try, log_in.
 def failed_tries(username):
     for row in db.select_all("login_fails"):
@@ -28,6 +29,7 @@ def failed_tries(username):
     return None
 
 
+# Count one more wrong password. After MAX_FAILS the account is locked for LOCK_SECONDS.
 # Used by: log_in.
 def record_failed_try(username, now):
     row = failed_tries(username)
@@ -59,6 +61,7 @@ def hash_password(password, salt=None, rounds=None):
     return f"pbkdf2_sha256${rounds}${salt}${digest.hex()}"
 
 
+# Hash the typed password again with the stored salt and rounds, then compare.
 # Used by: log_in.
 def check_password(password, stored):
     parts = stored.split("$")
@@ -69,6 +72,7 @@ def check_password(password, stored):
     return hmac.compare_digest(again, stored)
 
 
+# Why a username is not allowed, or "" when it is fine.
 # Used by: sign_up, login.create_account.
 def username_error(username):
     if len(username) < 3 or len(username) > 20:
@@ -79,6 +83,7 @@ def username_error(username):
     return ""
 
 
+# Why a password is not allowed, or "" when it is fine.
 # Used by: sign_up, login.create_account.
 def password_error(password):
     if len(password) < 8:
@@ -142,6 +147,7 @@ def remove_expired_sessions():
             db.delete_session(session["token_hash"])
 
 
+# Log the user in: make a random token, store only its hash, return the token (for the cookie).
 # Used by: server.Handler.do_POST.
 def start_session(user_id):
     remove_expired_sessions()
@@ -165,6 +171,7 @@ def user_for_token(token):
     return session["user_id"]
 
 
+# Log out: forget the session, so the cookie stops working.
 # Used by: server.Handler.do_POST.
 def end_session(token):
     db.delete_session(token_hash(token))

@@ -57,6 +57,7 @@ def main():
         ui.pause()
 
 
+# Start the app on its own screen and always restore the terminal, even after Ctrl+C.
 # Used by: python3 main.py (the if __name__ block).
 def run():
     ui.enter_app_screen()

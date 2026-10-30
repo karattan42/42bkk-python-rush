@@ -359,11 +359,13 @@ a.cal-day:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px;
 """
 
 
+# Escape < > & " ' so user text can never become HTML or script.
 # Used by: 19 places in server.
 def esc(text):
     return html.escape(str(text))
 
 
+# The CSS color for an activity.
 # Used by: 8 places in server.
 def color_of(activity):
     if activity in ACTIVITY_COLORS:
@@ -371,6 +373,7 @@ def color_of(activity):
     return "var(--muted)"
 
 
+# Colored circle with the activity's first letter.
 # Used by: entry_html, choose_html, log_form_html.
 def badge(activity):
     return f"<div class='badge' style='--c:{color_of(activity)}'>{esc(activity[0])}</div>"
@@ -405,12 +408,13 @@ BACK_LINK = "<a class='link' href='/'>Back to dashboard</a>"
 
 # parse_qs gives a list for every key; this returns the first value or "".
 # Used by: 8 places in server.
-def first(form, key):
+def form_value(form, key):
     if key in form:
         return form[key][0].strip()
     return ""
 
 
+# Text to a whole number between lo and hi, or None.
 # Used by: save_from_form, profile_from_form, Handler.do_GET, Handler.do_POST.
 def to_int(text, lo, hi):
     try:
@@ -449,6 +453,7 @@ def split_choice(state, value):
     return activity, focus
 
 
+# 2026-10-29 -> "Thu 29 Oct".
 # Used by: 7 places in server.
 def nice_date(iso):
     day = datetime.datetime.strptime(iso, "%Y-%m-%d").date()
@@ -469,6 +474,7 @@ def last_log(logs, activity, focus):
     return latest
 
 
+# Logs since Monday.
 # Used by: tiles_html.
 def this_week_logs(logs):
     today = datetime.date.today()
@@ -480,6 +486,7 @@ def this_week_logs(logs):
     return found
 
 
+# The sentence next to the mascot on the dashboard.
 # Used by: streak_html.
 def mood_sentence(logs, mood):
     days_off = stats.days_since_last(logs)
@@ -492,6 +499,7 @@ def mood_sentence(logs, mood):
     return "Log a workout to start a streak."
 
 
+# The big streak card at the top of the dashboard.
 # Used by: dashboard_html.
 def streak_html(state):
     logs = state["logs"]
@@ -564,6 +572,7 @@ def month_html(logs):
             "<p class='hint'>Tap a day to see what you did.</p></div>")
 
 
+# Four number tiles: best streak, minutes, kcal, workouts.
 # Used by: calendar_html, dashboard_html.
 def tiles_html(logs):
     week = this_week_logs(logs)
@@ -638,6 +647,7 @@ def chart_html(logs):
             f"<div class='chart'>{bars}</div><div class='chart-days'>{labels}</div></div>")
 
 
+# The activity mix: one bar split by activity, plus counts.
 # Used by: dashboard_html.
 def mix_html(logs):
     counts = stats.count_by(logs, "activity")
@@ -658,6 +668,7 @@ def mix_html(logs):
             f"<div class='mix'>{bar}</div><ul class='mix-rows'>{rows}</ul>{top_text}</div>")
 
 
+# One workout in a list: badge, focus, exercises, minutes and kcal.
 # Used by: day_html, history_html.
 def entry_html(log):
     pills = ""
@@ -730,6 +741,7 @@ def check_month(text):
     return first.year, first.month
 
 
+# Link to one month of the calendar, e.g. /calendar?month=2026-10.
 # Used by: day_html, calendar_html.
 def month_link(year, month):
     return f"/calendar?month={year:04d}-{month:02d}"
@@ -835,6 +847,7 @@ def history_html(logs, show_all):
             f"<span class='muted small'>{len(logs)} total</span></div>{body}{more}</div>")
 
 
+# The home page: streak, last 4 weeks, tiles, charts and history.
 # Used by: Handler.do_GET.
 def dashboard_html(state, message, show_all):
     logs = state["logs"]
@@ -854,6 +867,7 @@ def dashboard_html(state, message, show_all):
     return page("Streakr", ACCOUNT_LINKS + LOG_BUTTON, body)
 
 
+# A red error box (or a yellow one when the user may confirm anyway).
 # Used by: choose_html, log_form_html, auth_html, setup_html.
 def error_html(error, confirm_needed):
     if error == "":
@@ -863,6 +877,7 @@ def error_html(error, confirm_needed):
     return f"<div class='notice error' role='alert'>{esc(ui.mascot('shocked'))}  {esc(error)}</div>"
 
 
+# The "Choose activity / Details" trail above the log form.
 # Used by: choose_html, log_form_html.
 def crumbs(on_details):
     if on_details:
@@ -957,6 +972,7 @@ def usual_exercises(logs, activity, focus, library):
     return usual
 
 
+# One checkbox chip per exercise name.
 # Used by: exercise_picker.
 def exercise_chips(names, chosen):
     chips = ""
@@ -1010,6 +1026,7 @@ def exercise_picker(state, activity, focus, chosen):
     return html_text
 
 
+# Step 2 of logging: date, exercises, minutes, kcal.
 # Used by: Handler.do_GET, Handler.do_POST.
 def log_form_html(state, activity, focus, form, error, confirm_needed):
     chosen = []
@@ -1019,11 +1036,11 @@ def log_form_html(state, activity, focus, form, error, confirm_needed):
     duration_chips = ""
     for minutes in DURATION_PICKS:
         checked = ""
-        if first(form, "duration_pick") == minutes:
+        if form_value(form, "duration_pick") == minutes:
             checked = " checked"
         duration_chips += (f"<label class='chip'><input type='radio' name='duration_pick' "
                            f"value='{minutes}'{checked}><span>{minutes} min</span></label>")
-    date = first(form, "date")
+    date = form_value(form, "date")
     if date == "":
         date = datetime.date.today().isoformat()
     today = datetime.date.today().isoformat()
@@ -1036,18 +1053,18 @@ def log_form_html(state, activity, focus, form, error, confirm_needed):
                  f"<input type='hidden' name='choice' value='{esc(activity + '|' + focus)}'>"
                  f"<fieldset><legend>Exercises</legend>{picker}"
                  "<div class='other'><label class='small muted' for='other'>Not in the list?</label>"
-                 f"<input id='other' type='text' name='other' maxlength='200' value='{esc(first(form, 'other'))}' "
+                 f"<input id='other' type='text' name='other' maxlength='200' value='{esc(form_value(form, 'other'))}' "
                  "placeholder='e.g. Cable Curl, Pec Deck'>"
                  "<div class='help'>Separate with commas. They are saved to your list for next time.</div>"
                  "</div></fieldset>"
                  f"<fieldset><legend>How long?</legend><div class='chips'>{duration_chips}</div>"
                  "<div class='inline' style='margin-top:12px'><label class='small muted' for='duration'>"
                  "Other</label><input id='duration' type='number' inputmode='numeric' name='duration' "
-                 f"value='{esc(first(form, 'duration'))}'><span class='small muted'>minutes, 1 to 300</span>"
+                 f"value='{esc(form_value(form, 'duration'))}'><span class='small muted'>minutes, 1 to 300</span>"
                  "</div></fieldset>"
                  "<fieldset><label class='field' for='calories'>Calories (kcal)</label>"
                  f"<input id='calories' type='number' inputmode='numeric' name='calories' "
-                 f"value='{esc(first(form, 'calories'))}'>"
+                 f"value='{esc(form_value(form, 'calories'))}'>"
                  "<div class='help'>Leave empty to use the estimate</div></fieldset>"
                  "<fieldset><label class='field' for='date'>Date</label>"
                  f"<input id='date' type='date' name='date' value='{esc(date)}' max='{today}'></fieldset>"
@@ -1063,12 +1080,12 @@ def log_form_html(state, activity, focus, form, error, confirm_needed):
 # log is None when nothing was saved.
 # Used by: Handler.do_POST.
 def save_from_form(state, form):
-    choice = split_choice(state, first(form, "choice"))
+    choice = split_choice(state, form_value(form, "choice"))
     if choice is None:
         return None, "Pick an activity and focus.", False
     activity = choice[0]
     focus = choice[1]
-    date = check_date(first(form, "date"))
+    date = check_date(form_value(form, "date"))
     if date is None:
         return None, "The date must be YYYY-MM-DD and not in the future.", False
     exercises = []
@@ -1078,7 +1095,7 @@ def save_from_form(state, form):
                 exercises.append(name)
     # Typed-in exercises: new ones become part of this person's library for this focus.
     new_names = []
-    for name in first(form, "other").split(","):
+    for name in form_value(form, "other").split(","):
         name = " ".join(name.split())  # trim and squeeze spaces
         if name == "":
             continue
@@ -1100,16 +1117,16 @@ def save_from_form(state, form):
     if not ok:
         return None, f"Not in {focus}: {', '.join(bad_names)}.", False
     # A typed duration wins over the quick-pick buttons.
-    duration_text = first(form, "duration")
+    duration_text = form_value(form, "duration")
     if duration_text == "":
-        duration_text = first(form, "duration_pick")
+        duration_text = form_value(form, "duration_pick")
     duration = to_int(duration_text, 1, 300)
     if duration is None:
         return None, "Pick a duration, or type one from 1 to 300 minutes.", False
-    if first(form, "calories") == "":
+    if form_value(form, "calories") == "":
         calories = fitness.estimate_kcal(activity, state["profile"]["weight"], duration)
     else:
-        calories = to_int(first(form, "calories"), 0, 3000)
+        calories = to_int(form_value(form, "calories"), 0, 3000)
         if calories is None:
             return None, "Calories must be a whole number from 0 to 3000.", False
     with SAVE_LOCK:
@@ -1118,7 +1135,7 @@ def save_from_form(state, form):
         if rules.is_duplicate(logs, date, activity, focus):
             return None, f"You already logged {activity} / {focus} on {date}.", False
         if rules.needs_rest(logs, date, activity, focus):
-            if first(form, "confirm_rest") != "yes":
+            if form_value(form, "confirm_rest") != "yes":
                 return None, (f"You trained {activity} / {focus} the day before or after {date}. "
                               "Muscles need a rest day to recover."), True
         log = {"date": date, "activity": activity, "focus": focus,
@@ -1158,6 +1175,7 @@ def auth_html(mode, username, error):
     return page(title, "", body)
 
 
+# A row of checkbox or radio chips for the setup form.
 # Used by: setup_html.
 def chip_group(kind, name, options, chosen):
     chips = ""
@@ -1191,24 +1209,24 @@ def setup_html(form, error, editing):
             f"{error_html(error, False)}"
             "<form class='panel rise setup' style='--i:1' method='post' action='/setup'>"
             "<fieldset><label class='field' for='name'>What should we call you?</label>"
-            f"<input id='name' type='text' name='name' maxlength='30' value='{esc(first(form, 'name'))}'>"
+            f"<input id='name' type='text' name='name' maxlength='30' value='{esc(form_value(form, 'name'))}'>"
             "</fieldset>"
-            f"<fieldset><legend>Gender</legend>{chip_group('radio', 'gender', genders, [first(form, 'gender')])}"
+            f"<fieldset><legend>Gender</legend>{chip_group('radio', 'gender', genders, [form_value(form, 'gender')])}"
             "<div class='help'>Only used for the daily calorie (BMR) formula</div></fieldset>"
             "<div class='three'>"
             "<div><label class='field' for='age'>Age</label>"
-            f"<input id='age' type='number' name='age' value='{esc(first(form, 'age'))}'>"
+            f"<input id='age' type='number' name='age' value='{esc(form_value(form, 'age'))}'>"
             "<div class='help'>10 to 100</div></div>"
             "<div><label class='field' for='height'>Height (cm)</label>"
-            f"<input id='height' type='number' name='height' value='{esc(first(form, 'height'))}'>"
+            f"<input id='height' type='number' name='height' value='{esc(form_value(form, 'height'))}'>"
             "<div class='help'>100 to 250</div></div>"
             "<div><label class='field' for='weight'>Weight (kg)</label>"
-            f"<input id='weight' type='number' name='weight' value='{esc(first(form, 'weight'))}'>"
+            f"<input id='weight' type='number' name='weight' value='{esc(form_value(form, 'weight'))}'>"
             "<div class='help'>30 to 250</div></div></div>"
             f"<fieldset><legend>What do you do?</legend>"
             f"{chip_group('checkbox', 'activities', activities, chosen_activities)}</fieldset>"
             f"<fieldset><legend>Training days per week</legend>"
-            f"{chip_group('radio', 'weekly_goal', goals, [first(form, 'weekly_goal')])}</fieldset>"
+            f"{chip_group('radio', 'weekly_goal', goals, [form_value(form, 'weekly_goal')])}</fieldset>"
             "<button class='btn'>Save profile</button></form>")
     right = LOGOUT_FORM
     if editing:
@@ -1219,17 +1237,17 @@ def setup_html(form, error, editing):
 # Same ranges as the terminal onboarding. Returns (profile, error).
 # Used by: Handler.do_POST.
 def profile_from_form(form):
-    name = first(form, "name")
+    name = form_value(form, "name")
     if len(name) < 1 or len(name) > 30:
         return None, "Name must be 1 to 30 characters."
     if not name.isprintable():
         return None, "Name can only use normal letters, numbers and symbols."
-    gender = first(form, "gender")
+    gender = form_value(form, "gender")
     if gender not in ["male", "female", "none"]:
         return None, "Pick a gender option."
-    age = to_int(first(form, "age"), 10, 100)
-    height = to_int(first(form, "height"), 100, 250)
-    weight = to_int(first(form, "weight"), 30, 250)
+    age = to_int(form_value(form, "age"), 10, 100)
+    height = to_int(form_value(form, "height"), 100, 250)
+    weight = to_int(form_value(form, "weight"), 30, 250)
     if age is None or height is None or weight is None:
         return None, "Age 10 to 100, height 100 to 250 cm, weight 30 to 250 kg, as whole numbers."
     activities = []
@@ -1239,7 +1257,7 @@ def profile_from_form(form):
                 activities.append(activity)
     if len(activities) == 0:
         return None, "Pick at least one activity."
-    goal = to_int(first(form, "weekly_goal"), 1, 7)
+    goal = to_int(form_value(form, "weekly_goal"), 1, 7)
     if goal is None:
         return None, "Pick how many days a week you want to train."
     return {"name": name, "gender": gender, "age": age, "height": height, "weight": weight,
@@ -1258,6 +1276,7 @@ def profile_as_form(profile):
 # http.server needs a class with do_GET / do_POST. This is the only class in the
 # project: each method just reads the request and calls the plain functions above.
 class Handler(http.server.BaseHTTPRequestHandler):
+    # Pick the page for the URL and send it.
     # Called by: http.server, for every GET request (opening a page).
     def do_GET(self):
         if not self.host_ok():
@@ -1266,7 +1285,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         url = urllib.parse.urlparse(self.path)
         query = urllib.parse.parse_qs(url.query)
         if url.path == "/theme":
-            self.set_theme(first(query, "set"))
+            self.set_theme(form_value(query, "set"))
             return
         user_id = self.current_user()
         if url.path == "/login" or url.path == "/signup":
@@ -1291,32 +1310,32 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # Only show the message for a workout that really exists, so a link
             # cannot put made-up text on the page.
             message = ""
-            saved_id = to_int(first(query, "saved"), 1, 1000000000)
+            saved_id = to_int(form_value(query, "saved"), 1, 1000000000)
             if saved_id is not None and stats.find_by_id(state["logs"], saved_id) is not None:
                 message = f"Saved workout #{saved_id}."
-            self.send_html(dashboard_html(state, message, first(query, "all") == "1"))
+            self.send_html(dashboard_html(state, message, form_value(query, "all") == "1"))
         elif url.path == "/calendar":
             today = datetime.date.today()
             chosen = (today.year, today.month)
-            if first(query, "month") != "":
-                chosen = check_month(first(query, "month"))
+            if form_value(query, "month") != "":
+                chosen = check_month(form_value(query, "month"))
             if chosen is None:
                 self.redirect("/calendar")
             else:
                 self.send_html(calendar_html(state, chosen[0], chosen[1]))
         elif url.path == "/day":
-            date = check_date(first(query, "date"))
+            date = check_date(form_value(query, "date"))
             if date is None:
                 self.redirect("/")
             else:
                 self.send_html(day_html(state, date))
         elif url.path == "/log":
             # A date can come from the day page; ignore it if it is not a valid past date.
-            date = check_date(first(query, "date"))
+            date = check_date(form_value(query, "date"))
             if date is None:
                 date = ""
-            choice = split_choice(state, first(query, "choice"))
-            if first(query, "choice") == "":
+            choice = split_choice(state, form_value(query, "choice"))
+            if form_value(query, "choice") == "":
                 self.send_html(choose_html(state, "", date))
             elif choice is None:
                 self.send_html(choose_html(state, "Pick an activity and focus.", date))
@@ -1325,6 +1344,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         else:
             self.send_error(404)
 
+    # Read the sent form, act on it (log in, save, delete...), then redirect.
     # Called by: http.server, for every POST request (sending a form).
     def do_POST(self):
         if not self.host_ok() or not self.same_origin():
@@ -1338,7 +1358,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         form = urllib.parse.parse_qs(body)
 
         if self.path == "/signup" or self.path == "/login":
-            username = first(form, "username")
+            username = form_value(form, "username")
             password = ""
             if "password" in form:
                 password = form["password"][0]  # not stripped: spaces may be part of it
@@ -1352,7 +1372,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.redirect("/", self.session_cookie(accounts.start_session(user_id)))
             return
         if self.path == "/logout":
-            accounts.end_session(self.cookie("session"))
+            accounts.end_session(self.read_cookie("session"))
             self.redirect("/login", "session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax")
             return
 
@@ -1381,16 +1401,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # Redirect after saving, so refreshing the page does not save twice.
             self.redirect(f"/?saved={log['id']}")
             return
-        choice = split_choice(state, first(form, "choice"))
+        choice = split_choice(state, form_value(form, "choice"))
         if choice is None:
             self.send_html(choose_html(state, error))
         else:
             self.send_html(log_form_html(state, choice[0], choice[1], form, error,
                                          confirm_needed))
 
+    # Send a page with the right headers and the user's theme filled in.
     # Used by: Handler.do_GET, Handler.do_POST.
     def send_html(self, text):
-        text = text.replace("data-theme='auto'", f"data-theme='{self.theme()}'", 1)
+        text = text.replace("data-theme='auto'", f"data-theme='{self.current_theme()}'", 1)
         data = text.encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -1401,6 +1422,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    # Send the browser to another URL (303), optionally setting a cookie.
     # Used by: Handler.do_GET, Handler.do_POST, Handler.set_theme.
     def redirect(self, location, cookie=""):
         self.send_response(303)
@@ -1409,6 +1431,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header("Location", location)
         self.end_headers()
 
+    # Only answer requests for our own host names.
     # Used by: Handler.do_GET, Handler.do_POST.
     def host_ok(self):
         return self.headers.get("Host", "") in ALLOWED_HOSTS
@@ -1422,8 +1445,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return True
         return urllib.parse.urlparse(origin).netloc in ALLOWED_HOSTS
 
-    # Used by: Handler.do_POST, Handler.current_user, Handler.theme.
-    def cookie(self, name):
+    # One cookie value from the request, or "".
+    # Used by: Handler.do_POST, Handler.current_user, Handler.current_theme.
+    def read_cookie(self, name):
         try:
             cookie = http.cookies.SimpleCookie(self.headers.get("Cookie", ""))
         except http.cookies.CookieError:
@@ -1432,9 +1456,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return cookie[name].value
         return ""
 
+    # The logged-in user id from the session cookie, or None.
     # Used by: Handler.do_GET, Handler.do_POST.
     def current_user(self):
-        return accounts.user_for_token(self.cookie("session"))
+        return accounts.user_for_token(self.read_cookie("session"))
 
     # HttpOnly: page code cannot read it. SameSite=Lax: other sites cannot send it with
     # their forms. Secure (only over HTTPS) when we sit behind an HTTPS proxy like Dokploy's.
@@ -1447,12 +1472,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     # The theme lives in a cookie, so the choice is remembered on the next visit.
     # Used by: Handler.send_html.
-    def theme(self):
-        theme = self.cookie("theme")
+    def current_theme(self):
+        theme = self.read_cookie("theme")
         if theme in THEMES:
             return theme
         return "auto"
 
+    # Save the chosen theme in a cookie and go back to the page.
     # Used by: Handler.do_GET.
     def set_theme(self, theme):
         if theme not in THEMES:
@@ -1473,6 +1499,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         pass
 
 
+# Start the web server and serve until Ctrl+C.
 # Used by: python3 server.py (the if __name__ block).
 def run_server():
     db.init_db()

@@ -20,6 +20,7 @@ def wants_back(text, allow_back):
     return allow_back and text.lower() == "b"
 
 
+# Ask until the user types something non-empty and printable. None means back.
 # Used by: 8 places in login, menus, onboarding, plans.
 def ask_text(prompt, allow_back=False):
     while True:
@@ -54,6 +55,7 @@ def ask_int(prompt, lo, hi, allow_back=False, default=None):
         return number
 
 
+# Ask for a YYYY-MM-DD date that is real and not in the future. Enter = today.
 # Used by: menus.menu_log, menus.menu_manage, menus.edit_log.
 def ask_date(prompt):
     while True:
@@ -71,17 +73,20 @@ def ask_date(prompt):
         return day.isoformat()
 
 
+# Print a numbered list, starting at 1.
 # Used by: ask_choice, ask_multi.
 def print_options(options):
     for i in range(len(options)):
         print(ui.option(i + 1, options[i]))
 
 
+# The orange arrow shown before the user types.
 # Used by: ask_choice, ask_multi.
 def prompt_mark():
     return "  " + ui.paint(ui.PROMPT, ui.ORANGE, True)
 
 
+# Show numbered options and return the one picked (the text, not the number).
 # Used by: 10 places in menus, onboarding, plans.
 def ask_choice(prompt, options, allow_back=False):
     print()
@@ -93,6 +98,7 @@ def ask_choice(prompt, options, allow_back=False):
     return options[number - 1]
 
 
+# Like ask_choice, but several numbers separated by commas.
 # Used by: menus.menu_profile, onboarding.step_activities.
 def ask_multi(prompt, options, allow_back=False):
     print()
@@ -120,7 +126,8 @@ def ask_multi(prompt, options, allow_back=False):
         ui.error(f"Please enter numbers from 1 to {len(options)}, separated by commas.")
 
 
-# Used by: menus.rest_day_ok, menus.delete_log, plans.delete_plan, seed.main.
+# Ask until the answer is y/yes or n/no. Returns True or False.
+# Used by: menus.rest_day_ok, menus.confirm_delete_log, plans.confirm_delete_plan, seed.main.
 def ask_yes_no(prompt):
     while True:
         text = input(indent(prompt) + " (y/n): ").strip().lower()

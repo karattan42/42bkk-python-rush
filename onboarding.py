@@ -9,6 +9,7 @@ STEPS = 5
 GENDERS = {"Male": "male", "Female": "female", "Not specified": "none"}
 
 
+# Step 1. Each step fills part of the profile and returns a reply (None = go back).
 # Used by: run_onboarding.
 def step_name(profile):
     name = inputs.ask_text("What should I call you? ")
@@ -16,6 +17,7 @@ def step_name(profile):
     return f"Nice to meet you, {name}!"
 
 
+# Step 2: gender, used only by the daily calorie formula.
 # Used by: run_onboarding.
 def step_gender(profile):
     label = inputs.ask_choice("Gender (used for your daily calorie estimate):",
@@ -26,6 +28,7 @@ def step_gender(profile):
     return "Got it."
 
 
+# Step 3: age, height and weight.
 # Used by: run_onboarding.
 def step_body(profile):
     age = inputs.ask_int("Age (10-100): ", 10, 100, True)
@@ -43,6 +46,7 @@ def step_body(profile):
     return f"Your body burns about {round(fitness.bmr(profile))} kcal a day at rest."
 
 
+# Step 4: which activities this user does (shown in the menus later).
 # Used by: run_onboarding.
 def step_activities(profile):
     activities = inputs.ask_multi("Which activities do you do?",
@@ -53,6 +57,7 @@ def step_activities(profile):
     return f"{', '.join(activities)}. Great mix!"
 
 
+# Step 5: how many days a week to train.
 # Used by: run_onboarding.
 def step_goal(profile):
     goal = inputs.ask_int("How many days a week do you want to train? (1-7): ", 1, 7, True)

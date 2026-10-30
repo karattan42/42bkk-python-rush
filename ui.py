@@ -84,6 +84,7 @@ def to_256(rgb):
     return 16 + 36 * r + 6 * g + b
 
 
+# The ANSI escape code for one color, as text or background.
 # Used by: paint.
 def color_code(rgb, layer):
     # layer 38 = text color, 48 = background color
@@ -92,6 +93,7 @@ def color_code(rgb, layer):
     return f"\033[{layer};5;{to_256(rgb)}m"
 
 
+# Wrap text in color/bold codes. Without color it returns the text unchanged.
 # Used by: 46 places in calendar_view, home, inputs, login, main, menus, onboarding, plans, ui.
 def paint(text, rgb=None, bold=False, background=None):
     if not USE_COLOR:
@@ -106,6 +108,7 @@ def paint(text, rgb=None, bold=False, background=None):
     return start + text + "\033[0m"
 
 
+# The color name for an activity (cyan for unknown ones).
 # Used by: activity_rgb.
 def activity_color(activity):
     if activity in ACTIVITY_COLORS:
@@ -113,6 +116,7 @@ def activity_color(activity):
     return "cyan"
 
 
+# The RGB color for an activity.
 # Used by: 13 places in calendar_view, home, menus, plans.
 def activity_rgb(activity):
     return NAMED[activity_color(activity)]
@@ -120,11 +124,12 @@ def activity_rgb(activity):
 
 # A color part of the way from a to b (t = 0 is a, t = 1 is b).
 # Used by: gradient, progress, big_number, logo_lines.
-def mix(a, b, t):
+def mix_color(a, b, t):
     return (round(a[0] + (b[0] - a[0]) * t), round(a[1] + (b[1] - a[1]) * t),
             round(a[2] + (b[2] - a[2]) * t))
 
 
+# Color each letter a bit more from color a towards color b.
 # Used by: calendar_view.calendar_lines, home.screen_lines, header, bats.
 def gradient(text, a, b, bold=True):
     if not USE_COLOR:
@@ -135,7 +140,7 @@ def gradient(text, a, b, bold=True):
         if text[i] == " ":
             out = out + " "
         else:
-            out = out + paint(text[i], mix(a, b, i / last), bold)
+            out = out + paint(text[i], mix_color(a, b, i / last), bold)
     return out
 
 
@@ -185,6 +190,7 @@ def card(title, lines, rgb=DIM):
     return out
 
 
+# Join two blocks of lines next to each other (left padded to one width).
 # Used by: home.screen_lines, spooky_logo.
 def side_by_side(left, right, gap):
     left_width = 0
@@ -220,6 +226,7 @@ def option(number, text):
     return "  " + pill(f"{number:>2}") + " " + text
 
 
+# A bar like ████░░░░ for current out of total.
 # Used by: menus.menu_history, onboarding.run_onboarding.
 def progress(current, total, size=10):
     filled = current * size // total
@@ -229,7 +236,7 @@ def progress(current, total, size=10):
         return "█" * filled + "░" * (size - filled)
     bar = ""
     for i in range(filled):
-        bar = bar + paint("█", mix(PINK, ORANGE, i / max(size - 1, 1)))
+        bar = bar + paint("█", mix_color(PINK, ORANGE, i / max(size - 1, 1)))
     return bar + paint("░" * (size - filled), DIM)
 
 
@@ -257,7 +264,7 @@ FONT = {
 
 # Text drawn with blocks: each "#" in FONT becomes `pixel`. Returns 5 lines.
 # Used by: big_number, logo_lines, splash.
-def big(text, pixel):
+def big_text(text, pixel):
     rows = []
     for r in range(5):
         row = ""
@@ -275,16 +282,17 @@ def big(text, pixel):
 # A big number, colored top to bottom from pink to orange.
 # Used by: home.streak_card.
 def big_number(number):
-    rows = big(str(number), "██")
+    rows = big_text(str(number), "██")
     out = []
     for i in range(5):
-        out.append(paint(rows[i], mix(PINK, ORANGE, i / 4), True))
+        out.append(paint(rows[i], mix_color(PINK, ORANGE, i / 4), True))
     return out
 
 
+# The big STREAKR logo; shown_columns cuts it for the splash animation.
 # Used by: login.run_login, splash, spooky_logo.
 def logo_lines(shown_columns=999):
-    rows = big("STREAKR", "█")
+    rows = big_text("STREAKR", "█")
     full = len(rows[0])
     out = []
     for row in rows:
@@ -293,13 +301,14 @@ def logo_lines(shown_columns=999):
             if row[i] == " ":
                 line = line + " "
             else:
-                line = line + paint(row[i], mix(ORANGE, PINK, i / full), True)
+                line = line + paint(row[i], mix_color(ORANGE, PINK, i / full), True)
         out.append(line)
     return out
 
 
 # ---------- the screen ----------
 
+# Clear the screen and move the cursor to the top left.
 # Used by: calendar_view.show_month, home.show, login.run_login, header, splash.
 def clear():
     if USE_COLOR:
@@ -325,6 +334,7 @@ def enter_app_screen():
         sys.stdout.flush()
 
 
+# Show the cursor and go back to the normal terminal screen.
 # Used by: main.run.
 def leave_app_screen():
     if USE_COLOR:
@@ -332,12 +342,14 @@ def leave_app_screen():
         sys.stdout.flush()
 
 
+# Hide the blinking cursor during animations.
 # Used by: calendar_view.show_month, home.show, confetti, splash.
 def hide_cursor():
     if USE_COLOR:
         sys.stdout.write("\033[?25l")
 
 
+# Show the cursor again.
 # Used by: calendar_view.show_month, home.show, confetti, splash.
 def show_cursor():
     if USE_COLOR:
@@ -366,6 +378,7 @@ def title(text):
 
 # ---------- messages ----------
 
+# The little face for a mood (happy, sleepy, strong, shocked).
 # Used by: 10 places in calendar_view, home, server, ui.
 def mascot(mood):
     return MASCOTS[mood]
@@ -377,6 +390,7 @@ def say(mood, message, rgb=ORANGE):
     print("  " + paint(mascot(mood), rgb, True) + "  " + message)
 
 
+# Red message with a shocked face, then shake it.
 # Used by: 15 places in inputs, login, main, menus, plans.
 def error(message):
     line = "  " + paint(mascot("shocked") + "  " + message, RED)
@@ -395,16 +409,19 @@ def shake(line):
         time.sleep(0.05)
 
 
+# Yellow warning line.
 # Used by: menus.rest_day_ok.
 def warn(message):
     print("  " + paint("!  " + message, YELLOW))
 
 
+# Green message with a happy face.
 # Used by: 10 places in login, main, menus, onboarding, plans, ui.
 def success(message):
     print("  " + paint(mascot("happy") + "  " + message, GREEN))
 
 
+# Orange bold message with the strong face.
 # Used by: menus.menu_log.
 def strong(message):
     print("  " + paint(mascot("strong") + "  " + message, ORANGE, True))
@@ -418,6 +435,7 @@ def celebrate(message):
     success(message)
 
 
+# Random colored symbols falling over the screen for a moment.
 # Used by: celebrate.
 def confetti(rows):
     symbols = "✦✧•·*+"
@@ -458,7 +476,7 @@ def splash():
         return
     hide_cursor()
     clear()
-    full = len(big("STREAKR", "█")[0])
+    full = len(big_text("STREAKR", "█")[0])
     top = ["", "", ""]
     if HALLOWEEN:
         top = ["", "", "", ""]  # the same place as the logo next to the pumpkin
@@ -506,6 +524,7 @@ PUMPKIN = [
 ]
 
 
+# Which color each letter of the PUMPKIN art means; glow is the candle.
 # Used by: spooky_logo.
 def pumpkin_colors(glow):
     return {"g": (86, 170, 64), "o": ORANGE, "d": (196, 74, 8), "y": glow}
@@ -564,6 +583,7 @@ def bats():
     time.sleep(0.6)
 
 
+# Wait for Enter before going back.
 # Used by: calendar_view.show_day, login.run_login, main.main.
 def pause():
     input("\n  " + paint("Press Enter to go back", MUTED) + " ")

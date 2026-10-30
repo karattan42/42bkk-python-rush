@@ -13,6 +13,7 @@ import stats
 import ui
 
 
+# 2026-10-29 -> "Thu 29 Oct 2026".
 # Used by: calendar_view.show_day, print_logs, menu_log.
 def nice_date(iso):
     day = datetime.datetime.strptime(iso, "%Y-%m-%d").date()
@@ -21,7 +22,7 @@ def nice_date(iso):
 
 # Workouts grouped under their date. Each one: a bar in the activity's color, what was
 # trained, its ID, the minutes and kcal on the right, and the exercises underneath.
-# Used by: calendar_view.show_day, menu_history, menu_manage, delete_log.
+# Used by: calendar_view.show_day, menu_history, menu_manage, confirm_delete_log.
 def print_logs(logs):
     last_date = None
     for log in logs:
@@ -180,6 +181,7 @@ def mix_lines(logs):
     return [bar, legend.rstrip()]
 
 
+# Menu 3: totals, weekly goal, activity mix, last 4 weeks, 14-day bars, all workouts.
 # Used by: main.main.
 def menu_history(state):
     logs = state["logs"]
@@ -189,9 +191,9 @@ def menu_history(state):
         return
     goal = state["profile"]["weekly_goal"]
     done = stats.days_this_week(logs)
-    totals = [home.number("total time", f"{stats.total_of(logs, 'duration'):,} min"),
-              home.number("kcal", f"{stats.total_of(logs, 'calories'):,}"),
-              home.number("streak", ui.plural(stats.current_streak(logs), "day"))
+    totals = [home.label_value("total time", f"{stats.total_of(logs, 'duration'):,} min"),
+              home.label_value("kcal", f"{stats.total_of(logs, 'calories'):,}"),
+              home.label_value("streak", ui.plural(stats.current_streak(logs), "day"))
               + ui.paint(f" (best {stats.longest_streak(logs)})", ui.MUTED)]
     summary = ["   ".join(totals),
                ui.paint("THIS WEEK ", ui.MUTED) + ui.progress(done, goal) + f" {done} of {goal} days", ""]
@@ -212,6 +214,7 @@ def menu_history(state):
     print_logs(stats.sort_logs(logs, "date", True))
 
 
+# Menu 4: find workouts by ID, date or activity, then edit or delete one.
 # Used by: main.main.
 def menu_manage(state):
     logs = state["logs"]
@@ -249,9 +252,10 @@ def menu_manage(state):
     if action == "Edit":
         edit_log(state, log)
     else:
-        delete_log(state, log)
+        confirm_delete_log(state, log)
 
 
+# Change one field of a workout. A new date is checked by the same rules as logging.
 # Used by: menu_manage.
 def edit_log(state, log):
     logs = state["logs"]
@@ -273,8 +277,9 @@ def edit_log(state, log):
     ui.success(f"Workout #{log['id']} updated.")
 
 
+# Delete a workout after asking y/n.
 # Used by: menu_manage.
-def delete_log(state, log):
+def confirm_delete_log(state, log):
     print_logs([log])
     if inputs.ask_yes_no(f"Delete workout #{log['id']}?"):
         db.delete_log(log["id"])
@@ -284,6 +289,7 @@ def delete_log(state, log):
         print("  " + ui.paint("Kept.", ui.MUTED))
 
 
+# Add a custom exercise to the library (saved for this account only).
 # Used by: menu_profile.
 def add_exercise(state):
     library = state["library"]
@@ -301,6 +307,7 @@ def add_exercise(state):
     ui.success(f"Added {name} to {activity} / {focus}.")
 
 
+# Menu 5: show the profile, edit it, or add a custom exercise.
 # Used by: main.main.
 def menu_profile(state):
     profile = state["profile"]

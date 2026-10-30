@@ -41,6 +41,7 @@ def select_all(table):
     return result
 
 
+# The column names of a table (used to check if user_id was already added).
 # Used by: add_user_column.
 def column_names(table):
     conn = sqlite3.connect(DB_FILE, timeout=10)
@@ -99,6 +100,7 @@ def init_db():
                     save_exercise(activity, focus, name, 0, 0)
 
 
+# The profile of one account as a dict, or None before onboarding.
 # Used by: load_all.
 def load_profile(user_id):
     for row in select_all("profile"):
@@ -141,6 +143,7 @@ def load_with_exercises(table, user_id):
     return items
 
 
+# Read everything one account needs into the state dict the whole app passes around.
 # Used by: main.main, server.save_from_form, server.Handler.do_GET, server.Handler.do_POST.
 def load_all(user_id=LOCAL_USER):
     return {"profile": load_profile(user_id), "library": load_library(user_id),
@@ -158,6 +161,7 @@ def save_profile(profile, user_id=LOCAL_USER):
          profile["weight"], profile["weekly_goal"], json.dumps(profile["activities"])))
 
 
+# Add one exercise to the library (is_custom=1 for ones the user typed).
 # Used by: init_db, menus.add_exercise, seed.main, server.save_from_form.
 def save_exercise(activity, focus, name, is_custom, user_id=LOCAL_USER):
     run("INSERT INTO exercises (activity, focus, name, is_custom, user_id) VALUES (?, ?, ?, ?, ?)",
@@ -173,6 +177,7 @@ def save_log(log, user_id=LOCAL_USER):
                      log["duration"], log["calories"], user_id))
 
 
+# Write an edited workout back over the old row.
 # Used by: menus.edit_log.
 def update_log(log):
     run("UPDATE logs SET date = ?, activity = ?, focus = ?, exercises = ?, duration = ?,"
@@ -181,6 +186,7 @@ def update_log(log):
          log["duration"], log["calories"], log["id"]))
 
 
+# Insert a new plan and give the dict its new id.
 # Used by: plans.save_new_plan, seed.main.
 def save_plan(plan, user_id=LOCAL_USER):
     plan["id"] = run("INSERT INTO plans (name, activity, focus, exercises, user_id)"
@@ -189,6 +195,7 @@ def save_plan(plan, user_id=LOCAL_USER):
                       json.dumps(plan["exercises"]), user_id))
 
 
+# Write an edited plan back over the old row.
 # Used by: plans.edit_plan.
 def update_plan(plan):
     run("UPDATE plans SET name = ?, activity = ?, focus = ?, exercises = ? WHERE id = ?",
@@ -196,12 +203,14 @@ def update_plan(plan):
          plan["id"]))
 
 
-# Used by: plans.delete_plan.
+# Remove one plan.
+# Used by: plans.confirm_delete_plan.
 def delete_plan(plan_id):
     run("DELETE FROM plans WHERE id = ?", (plan_id,))
 
 
-# Used by: menus.delete_log.
+# Remove one workout.
+# Used by: menus.confirm_delete_log.
 def delete_log(log_id):
     run("DELETE FROM logs WHERE id = ?", (log_id,))
 
@@ -213,6 +222,7 @@ def create_user(username, password_hash, created):
                (username, password_hash, created))
 
 
+# The users row with this username, or None.
 # Used by: accounts.sign_up, accounts.log_in, login.create_account.
 def find_user(username):
     for row in select_all("users"):
@@ -221,12 +231,14 @@ def find_user(username):
     return None
 
 
+# Remember a login (only the token's hash is stored).
 # Used by: accounts.start_session.
 def save_session(token_hash, user_id, expires):
     run("INSERT INTO sessions (token_hash, user_id, expires) VALUES (?, ?, ?)",
         (token_hash, user_id, expires))
 
 
+# The sessions row for this token hash, or None.
 # Used by: accounts.user_for_token.
 def find_session(token_hash):
     for row in select_all("sessions"):
@@ -235,11 +247,13 @@ def find_session(token_hash):
     return None
 
 
+# Forget a login.
 # Used by: accounts.remove_expired_sessions, accounts.user_for_token, accounts.end_session.
 def delete_session(token_hash):
     run("DELETE FROM sessions WHERE token_hash = ?", (token_hash,))
 
 
+# Replace this username's wrong-try counter.
 # Used by: accounts.record_failed_try.
 def save_login_fail(username, fails, locked_until):
     run("DELETE FROM login_fails WHERE username = ?", (username,))
@@ -247,6 +261,7 @@ def save_login_fail(username, fails, locked_until):
         (username, fails, locked_until))
 
 
+# Clear this username's wrong-try counter (after a good login).
 # Used by: accounts.record_failed_try, accounts.log_in.
 def delete_login_fail(username):
     run("DELETE FROM login_fails WHERE username = ?", (username,))

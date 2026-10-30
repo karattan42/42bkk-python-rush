@@ -48,6 +48,7 @@ PLANS = [
 ]
 
 
+# Delete gym.db (after asking) and fill a new one with demo data.
 # Used by: python3 seed.py (the if __name__ block).
 def main():
     if os.path.exists(db.DB_FILE):

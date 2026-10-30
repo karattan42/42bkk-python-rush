@@ -15,6 +15,7 @@ MAX_WRONG = 3        # wrong logins in one visit before the program closes
 BACK = "back"
 
 
+# Read a password without showing it on screen.
 # Used by: log_in, create_account.
 def ask_password(prompt):
     # getpass hides what is typed. When the input is not a real terminal (tests), it

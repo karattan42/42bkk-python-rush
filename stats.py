@@ -4,6 +4,7 @@ import datetime
 import random
 
 
+# Add up one number field (duration or calories) over all logs.
 # Used by: 7 places in calendar_view, home, menus, server.
 def total_of(logs, key):
     total = 0
@@ -12,6 +13,7 @@ def total_of(logs, key):
     return total
 
 
+# How many logs have each value of a field, e.g. {"Gym": 5, "Yoga": 2}.
 # Used by: menus.mix_lines, server.mix_html.
 def count_by(logs, key):
     counts = {}
@@ -24,6 +26,7 @@ def count_by(logs, key):
     return counts
 
 
+# The exercise name that appears in the most logs.
 # Used by: menus.menu_history, server.mix_html.
 def most_frequent_exercise(logs):
     counts = {}
@@ -44,6 +47,7 @@ def most_frequent_exercise(logs):
     return best_name, best_count
 
 
+# Every date with at least one workout (a set, so each date once).
 # Used by: current_streak, longest_streak, days_this_week.
 def logged_dates(logs):
     dates = set()
@@ -99,6 +103,7 @@ def days_since_last(logs):
     return (datetime.date.today() - day).days
 
 
+# How many different days have a workout since Monday.
 # Used by: home.streak_card, menus.menu_history, server.streak_html.
 def days_this_week(logs):
     dates = logged_dates(logs)
@@ -112,6 +117,7 @@ def days_this_week(logs):
     return count
 
 
+# True when a should be placed before b (sort_logs uses this).
 # Used by: sort_logs.
 def comes_before(a, b, key, reverse):
     if reverse:
@@ -119,6 +125,7 @@ def comes_before(a, b, key, reverse):
     return a[key] < b[key]
 
 
+# Return a sorted copy of logs by one key (our own insertion sort).
 # Used by: menus.menu_history, menus.menu_manage, server.history_html.
 def sort_logs(logs, key, reverse):
     result = []
@@ -135,6 +142,7 @@ def sort_logs(logs, key, reverse):
     return result
 
 
+# Logs whose field equals value, ignoring upper/lower case.
 # Used by: calendar_view.show_day, menus.menu_manage.
 def search_logs(logs, field, value):
     found = []
@@ -144,6 +152,7 @@ def search_logs(logs, field, value):
     return found
 
 
+# The item with this id, or None.
 # Used by: menus.menu_manage, server.Handler.do_GET.
 def find_by_id(items, item_id):
     for item in items:
@@ -152,6 +161,7 @@ def find_by_id(items, item_id):
     return None
 
 
+# n different random exercises from one focus.
 # Used by: plans.random_plan.
 def random_workout(library, activity, focus, n):
     names = library[activity][focus]
@@ -167,6 +177,7 @@ def add_months(year, month, step):
     return index // 12, index % 12 + 1
 
 
+# 28 to 31: the first of next month minus the first of this month.
 # Used by: calendar_view.menu_calendar.
 def days_in_month(year, month):
     next_year, next_month = add_months(year, month, 1)

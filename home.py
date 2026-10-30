@@ -24,6 +24,7 @@ def pick_mood(logs):
     return "happy"
 
 
+# True if any workout has today's date.
 # Used by: screen_lines.
 def logged_today(logs):
     today = datetime.date.today().isoformat()
@@ -33,6 +34,7 @@ def logged_today(logs):
     return False
 
 
+# Minutes trained since Monday.
 # Used by: screen_lines.
 def minutes_this_week(logs):
     today = datetime.date.today()
@@ -44,6 +46,7 @@ def minutes_this_week(logs):
     return total
 
 
+# The orange card: big streak number, best streak, and one dot per goal day.
 # Used by: screen_lines.
 def streak_card(state, shown_streak):
     logs = state["logs"]
@@ -138,12 +141,14 @@ def spark_line(logs, grow):
     return line
 
 
+# A small "LABEL value" pair, e.g. "KCAL 1,250" (gray label, bold value).
 # Used by: calendar_view.calendar_lines, calendar_view.show_day, screen_lines,
 # menus.menu_history.
-def number(label, value):
+def label_value(label, value):
     return ui.paint(label.upper(), ui.MUTED) + " " + ui.paint(value, None, True)
 
 
+# Build every line of the home screen; show() prints them.
 # Used by: show.
 def screen_lines(state, shown_streak, reveal, grow):
     logs = state["logs"]
@@ -170,9 +175,9 @@ def screen_lines(state, shown_streak, reveal, grow):
     lines.append(ui.paint(ui.mascot(pick_mood(logs)), ui.ORANGE, True) + "  " + message)
     lines.append("")
 
-    totals = [number("minutes", f"{stats.total_of(logs, 'duration'):,}"),
-              number("kcal", f"{stats.total_of(logs, 'calories'):,}"),
-              number("workouts", str(len(logs))),
+    totals = [label_value("minutes", f"{stats.total_of(logs, 'duration'):,}"),
+              label_value("kcal", f"{stats.total_of(logs, 'calories'):,}"),
+              label_value("workouts", str(len(logs))),
               ui.paint("THIS WEEK", ui.MUTED) + " " + ui.paint(f"{minutes_this_week(logs)} min", None, True)]
     if wide:
         lines.append("    ".join(totals))
